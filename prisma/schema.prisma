@@ -1,0 +1,115 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  role      String   @default("OWNER")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties Property[]
+}
+
+model Property {
+  id           String   @id @default(uuid())
+  code         String   @unique
+  title        String
+  shortAddress String
+  rent               Float
+  surface            Float
+  description        String?
+  status             String   @default("AVAILABLE") // AVAILABLE, RENTED, DRAFT
+  isEligibleGLI      Boolean  @default(false)
+  minSalaryRequired  Float?
+  studentPolicy      String   @default("ACCEPTED") // ACCEPTED, REFUSED, ONLY_STUDENTS
+  ownerId            String?
+  owner        User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  images       PropertyImage[]
+  visitSlots   VisitSlot[]
+  applications Application[]
+}
+
+model PropertyImage {
+  id         String   @id @default(uuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  url        String
+  createdAt  DateTime @default(now())
+}
+
+model VisitSlot {
+  id         String   @id @default(uuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  date       DateTime
+  duration   Int      @default(30) // in minutes
+  status     String   @default("AVAILABLE") // AVAILABLE, BOOKED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  applications Application[]
+}
+
+model Candidate {
+  id        String   @id @default(uuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  phone     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications Application[]
+}
+
+model Application {
+  id          String   @id @default(uuid())
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  status      String   @default("NOUVEAU") // NOUVEAU, INCOMPLET, EN_COURS, ACCEPTE, REFUSE
+  hasAcceptedConditions Boolean @default(false)
+  isStudent   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  documents  Document[]
+  visitSlots VisitSlot[]
+  auditLogs  AuditLog[]
+}
+
+model Document {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  type          String      // ID_CARD, INCOME, EMPLOYMENT, TAX, RESIDENCE, GUARANTOR
+  filePath      String
+  fileName      String
+  mimeType      String
+  size          Int
+  status        String      @default("PENDING") // PENDING, VALIDATED, REJECTED
+  rejectionReason String?
+  expiresAt     DateTime?
+  createdAt     DateTime    @default(now())
+}
+
+model AuditLog {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  action        String
+  details       String?
+  createdAt     DateTime    @default(now())
+}
