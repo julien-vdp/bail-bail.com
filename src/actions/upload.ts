@@ -48,19 +48,39 @@ export async function uploadDocumentAction(prevState: any, formData: FormData) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Créer le dossier public/uploads s'il n'existe pas
-    const uploadDir = path.join(process.cwd(), "public", "uploads", applicationId);
+    const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+    if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 64) {
+      console.error("Clé de chiffrement manquante ou invalide");
+      return { error: "Erreur de configuration serveur (Sécurité)" };
+    }
+
+    const documentId = crypto.randomUUID();
+    
+    // AES-256-GCM Encryption
+    const keyBuffer = Buffer.from(ENCRYPTION_KEY, 'hex');
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-gcm', keyBuffer, iv);
+    
+    const encrypted = Buffer.concat([cipher.update(buffer), cipher.final()]);
+    const authTag = cipher.getAuthTag();
+
+    // Final file: IV (16) + AuthTag (16) + EncryptedData
+    const finalBuffer = Buffer.concat([iv, authTag, encrypted]);
+
+    // Store in private outside web root
+    const uploadDir = path.join(process.cwd(), "private_uploads", "documents", applicationId);
     await fs.mkdir(uploadDir, { recursive: true });
 
-    const safeFilename = `${type}-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+    const safeFilename = `${documentId}.enc`;
     const filePath = path.join(uploadDir, safeFilename);
-    const dbFilePath = `/uploads/${applicationId}/${safeFilename}`;
+    const dbFilePath = `/api/documents/${documentId}`;
 
-    await fs.writeFile(filePath, buffer);
+    await fs.writeFile(filePath, finalBuffer);
 
     // Enregistrer en base
     await prisma.document.create({
       data: {
+        id: documentId,
         applicationId,
         type,
         filePath: dbFilePath,
