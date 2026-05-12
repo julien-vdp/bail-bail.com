@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { PropertyEditForm } from "@/components/admin/PropertyEditForm";
+import { VisitSlotManager } from "@/components/admin/VisitSlotManager";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import fs from "fs";
@@ -15,7 +16,13 @@ export default async function EditPropertyPage({
   
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
-    include: { images: true }
+    include: { 
+      images: true,
+      visitSlots: {
+        include: { applications: true },
+        orderBy: { date: 'asc' }
+      }
+    }
   });
 
   if (!property) {
@@ -51,6 +58,7 @@ export default async function EditPropertyPage({
       </div>
 
       <PropertyEditForm property={property} bankImages={bankImages} />
+      <VisitSlotManager propertyId={property.id} initialSlots={property.visitSlots} />
     </div>
   );
 }

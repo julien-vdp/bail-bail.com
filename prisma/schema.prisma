@@ -50,14 +50,15 @@ model PropertyImage {
 }
 
 model VisitSlot {
-  id         String   @id @default(uuid())
-  propertyId String
-  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  date       DateTime
-  duration   Int      @default(30) // in minutes
-  status     String   @default("AVAILABLE") // AVAILABLE, BOOKED
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id            String   @id @default(uuid())
+  propertyId    String
+  property      Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  date          DateTime
+  duration      Int      @default(30) // in minutes
+  maxCandidates Int      @default(1) // Pour gérer le surbooking
+  status        String   @default("AVAILABLE") // AVAILABLE, BOOKED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   applications Application[]
 }
