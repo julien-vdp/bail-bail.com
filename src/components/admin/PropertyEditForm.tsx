@@ -1,12 +1,14 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useTransition, useState, useRef } from "react";
 import { updatePropertyAction, deletePropertyAction } from "@/actions/property";
+import { uploadPropertyImageAction, deletePropertyImageAction } from "@/actions/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Trash2, Save, Image as ImageIcon, CheckCircle2 } from "lucide-react";
+import { Loader2, Trash2, Save, Image as ImageIcon, CheckCircle2, UploadCloud } from "lucide-react";
+import { AddressAutocomplete } from "./AddressAutocomplete";
 
 export function PropertyEditForm({
   property,
@@ -16,24 +18,59 @@ export function PropertyEditForm({
   bankImages: string[];
 }) {
   const [isPending, startTransition] = useTransition();
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [isGli, setIsGli] = useState(property.isEligibleGLI || false);
-  const [selectedImages, setSelectedImages] = useState<string[]>(
-    property.images?.map((img: any) => img.url) || []
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Separate bank images and uploaded images
+  const allPropertyImages = property.images?.map((img: any) => img.url) || [];
+  const uploadedImages = allPropertyImages.filter((url: string) => url.startsWith("/api/images/"));
+  const [selectedBankImages, setSelectedBankImages] = useState<string[]>(
+    allPropertyImages.filter((url: string) => !url.startsWith("/api/images/"))
   );
 
-  const toggleImage = (url: string) => {
-    if (selectedImages.includes(url)) {
-      setSelectedImages(selectedImages.filter(i => i !== url));
+  const toggleBankImage = (url: string) => {
+    if (selectedBankImages.includes(url)) {
+      setSelectedBankImages(selectedBankImages.filter(i => i !== url));
     } else {
-      setSelectedImages([...selectedImages, url]);
+      setSelectedBankImages([...selectedBankImages, url]);
     }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    setIsUploading(true);
+    const formData = new FormData();
+    Array.from(e.target.files).forEach(file => formData.append("images", file));
+    
+    const res = await uploadPropertyImageAction(property.id, formData);
+    if (res.error) {
+      alert("Erreur: " + res.error);
+    }
+    
+    // Clear input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setIsUploading(false);
+  };
+
+  const handleDeleteImage = async (url: string) => {
+    if (!confirm("Voulez-vous vraiment supprimer cette photo ?")) return;
+    
+    setIsDeleting(url);
+    const res = await deletePropertyImageAction(url);
+    if (res.error) {
+      alert("Erreur: " + res.error);
+    }
+    setIsDeleting(null);
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    // Add selected images
-    selectedImages.forEach(img => {
+    // Add selected bank images to the form data
+    selectedBankImages.forEach(img => {
       formData.append("images", img);
     });
 
@@ -71,8 +108,8 @@ export function PropertyEditForm({
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-1 block">Adresse courte</label>
-                <Input name="shortAddress" defaultValue={property.shortAddress} required />
+                <label className="text-sm font-medium mb-1 block">Adresse complète</label>
+                <AddressAutocomplete name="shortAddress" defaultValue={property.shortAddress} />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -154,39 +191,90 @@ export function PropertyEditForm({
           </div>
 
           <div className="pt-6 border-t">
-            <div className="flex items-center gap-2 mb-4">
-              <ImageIcon className="w-5 h-5 text-slate-500" />
-              <h2 className="text-xl font-bold">Galerie photos</h2>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-slate-500" />
+                <h2 className="text-xl font-bold">Galerie photos</h2>
+              </div>
+              <div>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  multiple 
+                  className="hidden" 
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  disabled={isUploading}
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="gap-2"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
+                  Ajouter des photos
+                </Button>
+              </div>
             </div>
-            <p className="text-sm text-slate-500 mb-4">Sélectionnez les images à associer à cette annonce (issues de notre banque d'images générées).</p>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {bankImages.map(url => {
-                const isSelected = selectedImages.includes(url);
-                return (
-                  <div
-                    key={url}
-                    onClick={() => toggleImage(url)}
-                    className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${isSelected ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-slate-300"
-                      }`}
-                  >
-                    <img src={url} alt="Image bank" className="w-full h-full object-cover" />
-                    {isSelected && (
-                      <div className="absolute top-2 right-2 bg-white rounded-full">
-                        <CheckCircle2 className="w-6 h-6 text-primary" />
+            {uploadedImages.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-slate-700 mb-3">Vos photos importées</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {uploadedImages.map((url: string) => (
+                    <div key={url} className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 shadow-sm group">
+                      <img src={url} alt="Photo du logement" className="w-full h-full object-cover" />
+                      
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Button 
+                          type="button" 
+                          variant="destructive" 
+                          size="icon" 
+                          className="rounded-full h-8 w-8"
+                          onClick={() => handleDeleteImage(url)}
+                          disabled={isDeleting === url}
+                        >
+                          {isDeleting === url ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        </Button>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">Banque d'images générées</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {bankImages.map(url => {
+                  const isSelected = selectedBankImages.includes(url);
+                  return (
+                    <div
+                      key={url}
+                      onClick={() => toggleBankImage(url)}
+                      className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${isSelected ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-slate-300"
+                        }`}
+                    >
+                      <img src={url} alt="Image bank" className="w-full h-full object-cover" />
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 bg-white rounded-full">
+                          <CheckCircle2 className="w-6 h-6 text-primary" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
           <div className="flex justify-between items-center pt-6 border-t">
-            <Button type="button" variant="destructive" onClick={handleArchive} disabled={isPending}>
+            <Button type="button" variant="destructive" onClick={handleArchive} disabled={isPending || isUploading}>
               <Trash2 className="w-4 h-4 mr-2" /> Archiver
             </Button>
-            <Button type="submit" disabled={isPending} className="gap-2">
+            <Button type="submit" disabled={isPending || isUploading} className="gap-2">
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Enregistrer les modifications
             </Button>

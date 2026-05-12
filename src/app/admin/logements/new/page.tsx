@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { createPropertyAction } from "@/actions/property";
 import Link from "next/link";
 import { ChevronLeft, Loader2 } from "lucide-react";
+import { AddressAutocomplete } from "@/components/admin/AddressAutocomplete";
 
 export default function NewPropertyPage() {
   const [state, formAction, isPending] = useActionState(createPropertyAction, null);
@@ -39,8 +40,8 @@ export default function NewPropertyPage() {
             </div>
             
             <div>
-              <label className="text-sm font-medium mb-1 block">Adresse courte (Ville, Quartier)</label>
-              <Input name="shortAddress" placeholder="ex: Lyon 2ème, Cordeliers" required />
+              <label className="text-sm font-medium mb-1 block">Adresse complète</label>
+              <AddressAutocomplete name="shortAddress" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

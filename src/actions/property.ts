@@ -89,16 +89,22 @@ export async function updatePropertyAction(prevState: any, formData: FormData) {
       data: parsed.data,
     });
 
-    // Mettre à jour les images si passées
+    // Mettre à jour les images
     const selectedImages = formData.getAll("images") as string[];
-    if (selectedImages.length > 0) {
-      // Effacer les anciennes images et recréer (stratégie simple de remplacement)
-      await prisma.propertyImage.deleteMany({
-        where: { propertyId }
-      });
-      
+    
+    // Effacer uniquement les images de la banque (qui ne commencent pas par /api/images/)
+    await prisma.propertyImage.deleteMany({
+      where: { 
+        propertyId,
+        NOT: { url: { startsWith: "/api/images/" } }
+      }
+    });
+    
+    // Rajouter les images de la banque sélectionnées
+    const bankImagesToKeep = selectedImages.filter(url => !url.startsWith("/api/images/"));
+    if (bankImagesToKeep.length > 0) {
       await prisma.propertyImage.createMany({
-        data: selectedImages.map(url => ({
+        data: bankImagesToKeep.map(url => ({
           propertyId,
           url
         }))
