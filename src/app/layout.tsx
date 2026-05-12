@@ -11,8 +11,11 @@ const fontSans = Nunito({
 });
 
 export const metadata: Metadata = {
-  title: "Bail-Bail.com | Les dossiers locatifs, sans le chaos.",
-  description: "Déposez votre dossier locatif simplement et suivez son avancement en temps réel.",
+  title: "Bail-Bail.com | La gestion locative, sans le chaos.",
+  description: "Constituez, envoyez et gérez vos dossiers de location en toute simplicité.",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({
