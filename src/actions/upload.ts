@@ -241,3 +241,53 @@ export async function deletePropertyImageAction(imageUrl: string) {
     return { error: "Erreur lors de la suppression de l'image" };
   }
 }
+
+export async function deleteDocumentAction(documentId: string, applicationId: string) {
+  try {
+    const application = await prisma.application.findUnique({
+      where: { id: applicationId },
+      include: { documents: true }
+    });
+
+    if (!application) {
+      return { error: "Dossier introuvable." };
+    }
+
+    if (application.status === "SOUMIS" || application.status === "ACCEPTE" || application.status === "REFUSE") {
+      return { error: "Vous ne pouvez plus modifier les documents d'un dossier soumis." };
+    }
+
+    const document = application.documents.find(d => d.id === documentId);
+    if (!document) {
+      return { error: "Document introuvable." };
+    }
+
+    // Supression du fichier physique
+    const safeFilename = `${documentId}.enc`;
+    const filePath = path.join(process.cwd(), "private_uploads", "documents", applicationId, safeFilename);
+    try {
+      await fs.unlink(filePath);
+    } catch (e) {
+      console.warn("Fichier physique introuvable, suppression logique continue.");
+    }
+
+    // Suppression en base
+    await prisma.document.delete({
+      where: { id: documentId }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        applicationId,
+        action: "DOCUMENT_DELETE",
+        details: `Document ${document.type} supprimé (${document.fileName})`
+      }
+    });
+
+    revalidatePath(`/dossier/${applicationId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la suppression du document:", error);
+    return { error: "Impossible de supprimer ce document." };
+  }
+}

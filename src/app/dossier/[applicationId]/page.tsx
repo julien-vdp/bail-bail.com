@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { SubmitDossierForm } from "@/components/SubmitDossierForm";
 import { CandidateWarningScreen } from "@/components/CandidateWarningScreen";
+import { DeleteDocumentButton } from "@/components/DeleteDocumentButton";
 
 // Moved to a function inside the component to be dynamic
 // const EXPECTED_DOCUMENTS = [...]
@@ -122,7 +123,12 @@ export default async function DossierPage({
                           <FileText className="w-4 h-4" />
                           <span className="truncate">{uploadedDoc.fileName}</span>
                         </span>
-                        <Link href={uploadedDoc.filePath} target="_blank" className={buttonVariants({ variant: "ghost", size: "sm" })}>Voir</Link>
+                        <div className="flex items-center gap-1">
+                          <Link href={uploadedDoc.filePath} target="_blank" className={buttonVariants({ variant: "ghost", size: "sm", className: "px-2" })}>Voir</Link>
+                          {(application.status === "NOUVEAU" || application.status === "INCOMPLET") && (
+                            <DeleteDocumentButton documentId={uploadedDoc.id} applicationId={application.id} />
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
