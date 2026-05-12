@@ -12,15 +12,6 @@ export default function WaitingPage() {
       {/* Navigation */}
       <header className="relative z-50 flex items-center justify-between p-6 md:p-10 w-full max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
-          <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-100">
-            <Image 
-              src="/logo.png" 
-              alt="Bail-Bail Logo" 
-              width={36} 
-              height={36} 
-              className="rounded-lg object-contain"
-            />
-          </div>
           <span className="font-extrabold text-2xl text-slate-900 tracking-tight">
             Bail-Bail
           </span>
@@ -35,8 +26,10 @@ export default function WaitingPage() {
       </header>
 
       {/* Main Content Area */}
-      <main className="relative z-20 flex-1 flex items-center justify-center px-4 md:px-10 pb-20 pt-4">
-        <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+      <main className="relative z-20 flex-1 flex flex-col items-center px-4 md:px-10 pb-20 pt-4">
+        
+        {/* Hero Section */}
+        <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center gap-16 lg:gap-24 mb-20">
           
           {/* Text side (Left) */}
           <div className="flex-1 space-y-8 text-center lg:text-left z-30">
@@ -70,42 +63,60 @@ export default function WaitingPage() {
             </div>
           </div>
 
-          {/* Clean Cards side (Right) */}
-          <div className="w-full lg:w-1/2 flex flex-col gap-5 z-30 animate-in fade-in slide-in-from-right-8 duration-1000 delay-500">
-            
-            <div className="relative flex items-start gap-5 p-6 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition duration-300 transform hover:-translate-y-1">
-              <div className="p-3.5 rounded-2xl bg-primary/10 text-primary shrink-0">
-                <ShieldCheck className="w-7 h-7" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 mb-1.5">Sécurité Maximale</h3>
-                <p className="text-slate-500 leading-relaxed text-sm">Les documents sensibles de vos candidats sont chiffrés. Protégez leurs données et votre responsabilité.</p>
-              </div>
-            </div>
-
-            <div className="relative flex items-start gap-5 p-6 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition duration-300 transform hover:-translate-y-1 lg:translate-x-6">
-              <div className="p-3.5 rounded-2xl bg-blue-500/10 text-blue-600 shrink-0">
-                <FolderLock className="w-7 h-7" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 mb-1.5">Dossiers Centralisés</h3>
-                <p className="text-slate-500 leading-relaxed text-sm">Naviguez, comparez et gérez les profils de vos candidats locataires dans un Dashboard ergonomique.</p>
+          {/* Logo side (Right) */}
+          <div className="w-full max-w-md lg:w-1/2 flex justify-center lg:justify-end animate-in fade-in slide-in-from-right-8 duration-1000 delay-300">
+            <div className="relative group w-full aspect-square max-w-[400px]">
+              <div className="absolute -inset-2 bg-gradient-to-tr from-primary/30 to-blue-400/30 rounded-[3rem] blur-xl opacity-70 group-hover:opacity-100 transition duration-700" />
+              
+              <div className="relative h-full w-full bg-white/80 backdrop-blur-xl p-12 rounded-[3rem] shadow-2xl border border-white flex items-center justify-center transform transition duration-500 hover:-translate-y-2">
+                <Image 
+                  src="/logo.png" 
+                  alt="Bail-Bail Logo" 
+                  width={300} 
+                  height={300} 
+                  className="object-contain drop-shadow-md"
+                  priority
+                />
               </div>
             </div>
+          </div>
+        </div>
 
-            <div className="relative flex items-start gap-5 p-6 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition duration-300 transform hover:-translate-y-1">
-              <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-600 shrink-0">
-                <Zap className="w-7 h-7" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 mb-1.5">Gain de temps</h3>
-                <p className="text-slate-500 leading-relaxed text-sm">Génération automatique des créneaux de visites et notifications envoyées aux candidats sans effort.</p>
-              </div>
+        {/* Features Cards Section (Bottom) */}
+        <div className="w-full max-w-7xl grid grid-cols-1 md:grid-cols-3 gap-6 z-30 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-700">
+          
+          <div className="relative flex flex-col gap-4 p-6 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition duration-300 transform hover:-translate-y-1">
+            <div className="p-3.5 rounded-2xl bg-primary/10 text-primary w-fit">
+              <ShieldCheck className="w-7 h-7" />
             </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Sécurité Maximale</h3>
+              <p className="text-slate-500 leading-relaxed text-sm">Les documents sensibles de vos candidats sont chiffrés. Protégez leurs données et votre responsabilité.</p>
+            </div>
+          </div>
 
+          <div className="relative flex flex-col gap-4 p-6 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition duration-300 transform hover:-translate-y-1">
+            <div className="p-3.5 rounded-2xl bg-blue-500/10 text-blue-600 w-fit">
+              <FolderLock className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Dossiers Centralisés</h3>
+              <p className="text-slate-500 leading-relaxed text-sm">Naviguez, comparez et gérez les profils de vos candidats locataires dans un Dashboard ergonomique.</p>
+            </div>
+          </div>
+
+          <div className="relative flex flex-col gap-4 p-6 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition duration-300 transform hover:-translate-y-1">
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-600 w-fit">
+              <Zap className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Gain de temps</h3>
+              <p className="text-slate-500 leading-relaxed text-sm">Génération automatique des créneaux de visites et notifications envoyées aux candidats sans effort.</p>
+            </div>
           </div>
 
         </div>
+
       </main>
 
     </div>
