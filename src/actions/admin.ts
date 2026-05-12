@@ -22,7 +22,10 @@ export async function updateApplicationStatus(prevState: any, formData: FormData
   const { applicationId, status } = parsed.data;
 
   try {
-    const oldApp = await prisma.application.findUnique({ where: { id: applicationId } });
+    const oldApp = await prisma.application.findUnique({ 
+      where: { id: applicationId },
+      include: { candidate: true, property: true }
+    });
     
     await prisma.application.update({
       where: { id: applicationId },
@@ -37,6 +40,53 @@ export async function updateApplicationStatus(prevState: any, formData: FormData
           details: `Statut passé de ${oldApp.status} à ${status}`
         }
       });
+
+      // Envoi de l'email si le dossier est ACCEPTE
+      if (status === "ACCEPTE") {
+        try {
+          const nodemailer = require("nodemailer");
+          let transporter;
+
+          if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+            // Mode Production Réel
+            transporter = nodemailer.createTransport({
+              host: process.env.SMTP_HOST,
+              port: Number(process.env.SMTP_PORT) || 587,
+              secure: process.env.SMTP_SECURE === "true", // true for 465, false for other ports
+              auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASSWORD,
+              },
+            });
+          } else {
+            // Mode Simulation Ethereal
+            const testAccount = await nodemailer.createTestAccount();
+            transporter = nodemailer.createTransport({
+              host: "smtp.ethereal.email",
+              port: 587,
+              secure: false,
+              auth: { user: testAccount.user, pass: testAccount.pass },
+            });
+          }
+
+          const fromEmail = process.env.EMAIL_FROM || '"Bail-Bail" <contact@bail-bail.com>';
+          const info = await transporter.sendMail({
+            from: fromEmail,
+            to: oldApp.candidate.email,
+            subject: "Félicitations ! Votre dossier a été accepté - Bail-Bail",
+            text: `Bonjour ${oldApp.candidate.firstName},\n\nExcellente nouvelle ! Votre dossier pour le logement "${oldApp.property.title}" a été accepté par le propriétaire.\nLe propriétaire va prendre contact avec vous très prochainement pour finaliser les démarches.\n\nCordialement,\nL'équipe Bail-Bail.`,
+            html: `<b>Bonjour ${oldApp.candidate.firstName},</b><br><br>Excellente nouvelle ! Votre dossier pour le logement <b>${oldApp.property.title}</b> a été <span style="color: green; font-weight: bold;">accepté</span> par le propriétaire.<br><br>Le propriétaire va prendre contact avec vous très prochainement pour finaliser les démarches (signature du bail, état des lieux).<br><br>Cordialement,<br>L'équipe Bail-Bail.`,
+          });
+
+          if (!process.env.SMTP_HOST) {
+            console.log("================ EMAILS SIMULÉS (DOSSIER ACCEPTÉ) ================");
+            console.log("Email envoyé ! Visualisez-le ici : %s", nodemailer.getTestMessageUrl(info));
+            console.log("==================================================================");
+          }
+        } catch (err) {
+          console.error("Erreur lors de l'envoi de l'email d'acceptation :", err);
+        }
+      }
     }
 
     revalidatePath(`/admin/dossiers/${applicationId}`);
