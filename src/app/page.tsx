@@ -55,8 +55,8 @@ export default async function HomePage() {
           {/* Text side */}
           <div className="flex-1 space-y-6 text-center lg:text-left">
             <div className="inline-flex items-center rounded-full border border-white/30 bg-white/10 backdrop-blur-md px-4 py-1.5 text-sm font-semibold text-white shadow-xl">
-              <span className="flex h-2 w-2 rounded-full bg-primary mr-3 animate-pulse"></span>
-              La location nouvelle génération
+              <span className="flex h-2 w-2 rounded-full bg-green-400 mr-3 animate-pulse"></span>
+              🚀 Version Production - Officiellement en ligne !
             </div>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.1] drop-shadow-xl">
               Trouvez votre chez-vous, <span className="text-primary brightness-125">sereinement</span>.
