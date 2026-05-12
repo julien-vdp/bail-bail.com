@@ -6,9 +6,10 @@ import path from "path";
 
 export async function GET(
   request: Request,
-  { params }: { params: { filename: string } }
+  { params }: { params: Promise<{ filename: string }> }
 ) {
-  const filename = params.filename;
+  const resolvedParams = await params;
+  const filename = resolvedParams.filename;
   if (!filename || !filename.endsWith(".jpg")) {
     return new NextResponse("Not Found", { status: 404 });
   }
