@@ -18,11 +18,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { verifySession } = await import("@/lib/auth");
+  const session = await verifySession();
+
   return (
     <html
       lang="fr"
@@ -30,7 +33,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <Header />
+        <Header session={session} />
         <main className="flex-1 flex flex-col">
           {children}
         </main>

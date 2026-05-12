@@ -4,10 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export function Header() {
+export function Header({ session }: { session: any }) {
   const pathname = usePathname();
   
-  if (pathname === "/" || pathname === "/beta" || pathname.startsWith("/logement") || pathname.startsWith("/db-explorer")) {
+  if (pathname === "/" || pathname === "/beta" || pathname.startsWith("/logement") || pathname.startsWith("/db-explorer") || pathname.startsWith("/auth")) {
     return null;
   }
 
@@ -24,10 +24,16 @@ export function Header() {
           />
           <span className="font-extrabold text-2xl md:text-3xl text-primary tracking-tight">Bail-Bail</span>
         </Link>
-        <div className="ml-auto">
-          <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-            Accès Propriétaire
-          </Link>
+        <div className="ml-auto flex items-center gap-4">
+          {session ? (
+            <Link href={session.role === "OWNER" ? "/admin" : "/compte"} className="text-sm font-semibold bg-primary/10 text-primary px-4 py-2 rounded-full hover:bg-primary/20 transition-colors">
+              Mon Espace
+            </Link>
+          ) : (
+            <Link href="/auth" className="text-sm font-semibold bg-primary text-white px-4 py-2 rounded-full hover:bg-primary/90 transition-colors shadow-sm">
+              Se connecter
+            </Link>
+          )}
         </div>
       </div>
     </header>
