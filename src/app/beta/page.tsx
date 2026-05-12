@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { verifySession } from "@/lib/auth";
 import { SearchForm } from "@/components/SearchForm";
 import { BackgroundSlider } from "@/components/BackgroundSlider";
 import Image from "next/image";
@@ -11,6 +12,8 @@ const HOME_SLIDES = [
 ];
 
 export default async function HomePage() {
+  const session = await verifySession();
+  
   const properties = await prisma.property.findMany({
     where: { status: "AVAILABLE" },
     select: {
@@ -40,12 +43,22 @@ export default async function HomePage() {
             Bail-Bail
           </span>
         </div>
-        <Link 
-          href="/admin" 
-          className="text-white font-medium text-sm md:text-base hover:text-white/80 transition-colors bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full backdrop-blur-md border border-white/20"
-        >
-          Accès Propriétaire
-        </Link>
+        
+        {session ? (
+          <Link 
+            href={session.role === "OWNER" ? "/admin" : "/compte"} 
+            className="text-white font-medium text-sm md:text-base hover:text-white/80 transition-colors bg-white/20 hover:bg-white/30 px-4 py-2 rounded-full backdrop-blur-md border border-white/20"
+          >
+            Mon Espace
+          </Link>
+        ) : (
+          <Link 
+            href="/auth" 
+            className="text-white font-semibold text-sm md:text-base hover:text-white/90 transition-colors bg-primary hover:bg-primary/90 px-5 py-2 rounded-full backdrop-blur-md shadow-lg"
+          >
+            Se connecter
+          </Link>
+        )}
       </header>
 
       {/* Main Content Area */}
