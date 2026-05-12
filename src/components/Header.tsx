@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 export function Header() {
   const pathname = usePathname();
   
-  if (pathname === "/" || pathname.startsWith("/logement")) {
+  if (pathname === "/" || pathname === "/beta" || pathname.startsWith("/logement") || pathname.startsWith("/db-explorer")) {
     return null;
   }
 

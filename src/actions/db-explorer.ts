@@ -40,17 +40,17 @@ function getPrismaModel(modelName: string): any {
     visitSlot: prisma.visitSlot,
     document: prisma.document,
   };
-  return models[modelName.toLowerCase()];
+  return models[modelName];
 }
 
 export async function getTableData(modelName: string) {
-  const isAuth = await checkDbAuth();
-  if (!isAuth) throw new Error("Unauthorized");
-
-  const model = getPrismaModel(modelName);
-  if (!model) throw new Error("Model not found");
-
   try {
+    const isAuth = await checkDbAuth();
+    if (!isAuth) return { error: "Unauthorized" };
+
+    const model = getPrismaModel(modelName);
+    if (!model) return { error: "Model not found" };
+
     const data = await model.findMany({
       take: 100, // Limit to 100 to avoid huge payloads
       orderBy: { createdAt: 'desc' }
@@ -63,13 +63,13 @@ export async function getTableData(modelName: string) {
 }
 
 export async function deleteRecord(modelName: string, id: string) {
-  const isAuth = await checkDbAuth();
-  if (!isAuth) throw new Error("Unauthorized");
-
-  const model = getPrismaModel(modelName);
-  if (!model) throw new Error("Model not found");
-
   try {
+    const isAuth = await checkDbAuth();
+    if (!isAuth) return { error: "Unauthorized" };
+
+    const model = getPrismaModel(modelName);
+    if (!model) return { error: "Model not found" };
+
     await model.delete({ where: { id } });
     return { success: true };
   } catch (error) {
@@ -79,18 +79,16 @@ export async function deleteRecord(modelName: string, id: string) {
 }
 
 export async function updateRecord(modelName: string, id: string, data: any) {
-  const isAuth = await checkDbAuth();
-  if (!isAuth) throw new Error("Unauthorized");
-
-  const model = getPrismaModel(modelName);
-  if (!model) throw new Error("Model not found");
-
-  // Filter out non-updatable fields or parse JSON
-  // For a generic explorer, we just try to update whatever is passed
-  // We remove 'id', 'createdAt', 'updatedAt' from the update payload to be safe
-  const { id: _, createdAt, updatedAt, ...updateData } = data;
-
   try {
+    const isAuth = await checkDbAuth();
+    if (!isAuth) return { error: "Unauthorized" };
+
+    const model = getPrismaModel(modelName);
+    if (!model) return { error: "Model not found" };
+
+    // Filter out non-updatable fields
+    const { id: _, createdAt, updatedAt, ...updateData } = data;
+
     const result = await model.update({
       where: { id },
       data: updateData
