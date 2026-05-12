@@ -43,7 +43,45 @@ function getPrismaModel(modelName: string): any {
   return models[modelName];
 }
 
-export async function getTableData(modelName: string) {
+export async function getDatabaseMetrics() {
+  try {
+    const isAuth = await checkDbAuth();
+    if (!isAuth) return { error: "Unauthorized" };
+
+    const [
+      totalProperties,
+      activeProperties,
+      totalCandidates,
+      totalApplications,
+      totalVisits,
+      applicationsByStatus
+    ] = await Promise.all([
+      prisma.property.count(),
+      prisma.property.count({ where: { status: "AVAILABLE" } }),
+      prisma.candidate.count(),
+      prisma.application.count(),
+      prisma.visitSlot.count(),
+      prisma.application.groupBy({
+        by: ['status'],
+        _count: { status: true }
+      })
+    ]);
+
+    return {
+      data: {
+        properties: { total: totalProperties, active: activeProperties },
+        candidates: totalCandidates,
+        applications: { total: totalApplications, byStatus: applicationsByStatus },
+        visits: totalVisits
+      }
+    };
+  } catch (error) {
+    console.error("Error fetching metrics:", error);
+    return { error: "Erreur lors de la récupération des métriques" };
+  }
+}
+
+export async function getTableData(modelName: string, filter?: { field: string, value: string }) {
   try {
     const isAuth = await checkDbAuth();
     if (!isAuth) return { error: "Unauthorized" };
@@ -51,9 +89,39 @@ export async function getTableData(modelName: string) {
     const model = getPrismaModel(modelName);
     if (!model) return { error: "Model not found" };
 
+    let include = undefined;
+
+    // Define smart includes to replace foreign keys with real visual objects
+    if (modelName === "property") {
+      include = { owner: { select: { id: true, name: true, email: true } } };
+    } else if (modelName === "application") {
+      include = {
+        property: { select: { id: true, title: true } },
+        candidate: { select: { id: true, firstName: true, lastName: true } },
+      };
+    } else if (modelName === "visitSlot") {
+      include = { property: { select: { id: true, title: true } } };
+    } else if (modelName === "document") {
+      include = {
+        application: { 
+          select: { 
+            id: true, 
+            candidate: { select: { firstName: true, lastName: true } },
+            property: { select: { title: true } }
+          } 
+        }
+      };
+    }
+
+    const where = filter && filter.field && filter.value 
+      ? { [filter.field]: filter.value } 
+      : {};
+
     const data = await model.findMany({
+      where,
       take: 100, // Limit to 100 to avoid huge payloads
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include
     });
     return { data };
   } catch (error) {
