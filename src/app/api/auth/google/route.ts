@@ -4,17 +4,19 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const role = searchParams.get("role") || "CANDIDATE"; // "OWNER" or "CANDIDATE"
 
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "localhost:3000";
+  const protocol = request.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+  const baseUrl = `${protocol}://${host}`;
+
   const clientId = process.env.GOOGLE_CLIENT_ID;
   
   if (!clientId) {
     // If no client ID, redirect back with an error
-    return NextResponse.redirect(new URL(`/auth?error=google_not_configured`, request.url));
+    return NextResponse.redirect(new URL(`/auth?error=google_not_configured`, baseUrl));
   }
 
   // Construct the redirect URI dynamically based on the current origin
-  const host = request.headers.get("host") || "localhost:3000";
-  const protocol = host.includes("localhost") ? "http" : "https";
-  const redirectUri = `${protocol}://${host}/api/auth/google/callback`;
+  const redirectUri = `${baseUrl}/api/auth/google/callback`;
 
   // Construct the Google OAuth URL
   const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");

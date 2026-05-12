@@ -8,19 +8,20 @@ export async function GET(request: Request) {
   const state = searchParams.get("state") as "OWNER" | "CANDIDATE" | null;
   const error = searchParams.get("error");
 
-  const host = request.headers.get("host") || "localhost:3000";
-  const protocol = host.includes("localhost") ? "http" : "https";
-  const redirectUri = `${protocol}://${host}/api/auth/google/callback`;
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "localhost:3000";
+  const protocol = request.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+  const baseUrl = `${protocol}://${host}`;
+  const redirectUri = `${baseUrl}/api/auth/google/callback`;
 
   if (error || !code) {
-    return NextResponse.redirect(new URL(`/auth?error=google_auth_failed`, request.url));
+    return NextResponse.redirect(new URL(`/auth?error=google_auth_failed`, baseUrl));
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    return NextResponse.redirect(new URL(`/auth?error=google_not_configured`, request.url));
+    return NextResponse.redirect(new URL(`/auth?error=google_not_configured`, baseUrl));
   }
 
   try {
@@ -92,10 +93,10 @@ export async function GET(request: Request) {
     });
 
     // 5. Redirect to destination
-    return NextResponse.redirect(new URL(role === "OWNER" ? "/admin" : "/compte", request.url));
+    return NextResponse.redirect(new URL(role === "OWNER" ? "/admin" : "/compte", baseUrl));
 
   } catch (error) {
     console.error("Google Auth Error:", error);
-    return NextResponse.redirect(new URL(`/auth?error=google_auth_failed`, request.url));
+    return NextResponse.redirect(new URL(`/auth?error=google_auth_failed`, baseUrl));
   }
 }
