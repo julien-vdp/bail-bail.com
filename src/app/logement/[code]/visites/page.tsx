@@ -5,7 +5,6 @@ import { getSimulatedUser } from "@/lib/auth";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import Image from "next/image";
-import { BackgroundSlider } from "@/components/BackgroundSlider";
 
 export default async function VisitsPage({
   params,
@@ -41,20 +40,6 @@ export default async function VisitsPage({
     redirect(`/auth?redirect=/logement/${code}/visites`);
   }
 
-  const slides = code.includes("CHOISY") 
-    ? [
-        { src: "/choisy.png", alt: "Salon" },
-        { src: "/choisy-2.png", alt: "Chambre" },
-        { src: "/choisy-3.png", alt: "Cuisine" }
-      ]
-    : code.includes("LYON")
-    ? [
-        { src: "/lyon.png", alt: "Salon Canut" },
-        { src: "/lyon-2.png", alt: "Chambre Canut" },
-        { src: "/lyon-3.png", alt: "Bibliothèque" }
-      ]
-    : [{ src: "/hero-illustration.png", alt: "Appartement" }];
-
   const slotsByDate = property.visitSlots.reduce((acc, slot) => {
     const dateStr = slot.date.toISOString().split("T")[0];
     if (!acc[dateStr]) acc[dateStr] = [];
@@ -65,36 +50,38 @@ export default async function VisitsPage({
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-slate-50">
       {/* Left side - Full screen image */}
-      <div className="lg:w-1/2 relative min-h-[30vh] lg:min-h-screen hidden md:block">
-        <BackgroundSlider slides={slides} />
-        <div className="absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-r from-slate-900/60 to-transparent pointer-events-none" />
+      <div className="lg:w-1/2 relative min-h-[30vh] lg:min-h-screen hidden md:block overflow-hidden bg-white">
+        <Image src="/visit_schedule_bg.png" alt="Créneaux de visite" fill className="object-cover object-center opacity-90" priority />
+        <div className="absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-r from-white/95 via-white/70 to-transparent pointer-events-none" />
         
         {/* Navigation & Branding */}
         <div className="absolute top-0 left-0 p-6 md:p-10 w-full h-full flex flex-col justify-between pointer-events-none">
           <div>
-            <Link href={`/logement/${code}`} className="inline-flex items-center text-white/80 hover:text-white mb-8 transition-colors pointer-events-auto">
+            <Link href={`/logement/${code}`} className="inline-flex items-center text-slate-500 hover:text-slate-900 mb-8 transition-colors pointer-events-auto font-medium">
               <ChevronLeft className="w-5 h-5 mr-1" />
               Retour au logement
             </Link>
             <div className="flex items-center gap-3">
-              <div className="bg-white p-2 rounded-xl shadow-lg pointer-events-auto">
+              <div className="pointer-events-auto flex items-center">
                 <Image 
                   src="/logo.png" 
                   alt="Bail-Bail Logo" 
-                  width={40} 
-                  height={40} 
-                  className="rounded-lg object-contain"
+                  width={48} 
+                  height={48} 
+                  className="object-contain"
                 />
               </div>
-              <span className="font-extrabold text-2xl text-white tracking-tight drop-shadow-md">
+              <span className="font-extrabold text-3xl text-slate-900 tracking-tight">
                 Bail-Bail
               </span>
             </div>
           </div>
           
-          <div className="text-white pb-10 pointer-events-auto">
-            <h2 className="text-3xl font-bold drop-shadow-md">{property.title}</h2>
-            <p className="opacity-80 mt-2">{property.shortAddress}</p>
+          <div className="text-slate-900 pb-10 pointer-events-auto max-w-md">
+            <h2 className="text-4xl font-black tracking-tight leading-tight">{property.title}</h2>
+            <p className="text-slate-600 font-medium text-lg mt-3 flex items-center">
+              📍 {property.shortAddress}
+            </p>
           </div>
         </div>
       </div>
