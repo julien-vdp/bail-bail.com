@@ -5,7 +5,7 @@ import { login, register } from "@/actions/auth";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export function AuthForm() {
+export function AuthForm({ redirectUrl }: { redirectUrl?: string }) {
   const [role, setRole] = useState<"CANDIDATE" | "OWNER">("CANDIDATE");
   const [mode, setMode] = useState<"LOGIN" | "REGISTER">("LOGIN");
   const [error, setError] = useState("");
@@ -23,7 +23,11 @@ export function AuthForm() {
       if (res.error) {
         setError(res.error);
       } else {
-        router.push(role === "OWNER" ? "/admin" : "/compte");
+        if (redirectUrl) {
+          router.push(redirectUrl);
+        } else {
+          router.push(role === "OWNER" ? "/admin" : "/compte");
+        }
         router.refresh();
       }
     });
@@ -65,7 +69,7 @@ export function AuthForm() {
 
       {/* Google Login Button */}
       <a
-        href={`/api/auth/google?role=${role}`}
+        href={`/api/auth/google?role=${role}${redirectUrl ? `&redirectUrl=${encodeURIComponent(redirectUrl)}` : ''}`}
         className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-3 shadow-sm"
       >
         <svg viewBox="0 0 24 24" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">

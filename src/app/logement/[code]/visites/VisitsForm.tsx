@@ -76,23 +76,14 @@ export function VisitsForm({
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold border-b pb-2">2. Vos coordonnées</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="firstName">Prénom</Label>
-            <Input id="firstName" name="firstName" defaultValue={candidateData?.firstName} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="lastName">Nom</Label>
-            <Input id="lastName" name="lastName" defaultValue={candidateData?.lastName} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" defaultValue={candidateData?.email} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Téléphone</Label>
-            <Input id="phone" name="phone" type="tel" defaultValue={candidateData?.phone} required />
+        <div className="flex items-center justify-between border-b pb-2">
+          <h3 className="text-lg font-semibold">2. Vos coordonnées</h3>
+          <a href="/compte" className="text-sm text-primary hover:underline font-medium">Modifier</a>
+        </div>
+        <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
+          <div>
+            <p className="font-semibold text-slate-800">{candidateData?.firstName} {candidateData?.lastName}</p>
+            <p className="text-sm text-slate-500">{candidateData?.email} • {candidateData?.phone}</p>
           </div>
         </div>
       </div>

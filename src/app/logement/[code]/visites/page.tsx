@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { VisitsForm } from "./VisitsForm";
 import { getSimulatedUser } from "@/lib/auth";
 import Link from "next/link";
@@ -28,11 +28,17 @@ export default async function VisitsPage({
   }
 
   const simulatedUser = await getSimulatedUser();
-  let candidateData = null;
-  if (simulatedUser?.role === "CANDIDATE") {
-    candidateData = await prisma.candidate.findUnique({
-      where: { id: simulatedUser.id }
-    });
+  
+  if (!simulatedUser || simulatedUser.role !== "CANDIDATE") {
+    redirect(`/auth?redirect=/logement/${code}/visites`);
+  }
+
+  const candidateData = await prisma.candidate.findUnique({
+    where: { id: simulatedUser.id }
+  });
+
+  if (!candidateData) {
+    redirect(`/auth?redirect=/logement/${code}/visites`);
   }
 
   const slides = code.includes("CHOISY") 

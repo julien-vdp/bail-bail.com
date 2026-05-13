@@ -5,12 +5,14 @@ import { MapPin, Expand, Euro, Calendar, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { BackgroundSlider } from "@/components/BackgroundSlider";
+import { verifySession } from "@/lib/auth";
 
 export default async function PropertyPage({
   params,
 }: {
   params: Promise<{ code: string }>
 }) {
+  const session = await verifySession();
   const code = (await params).code.toUpperCase();
   const property = await prisma.property.findUnique({
     where: { code },
@@ -140,7 +142,10 @@ export default async function PropertyPage({
 
           <div className="pt-6 border-t border-slate-200">
             {property.status === "AVAILABLE" ? (
-              <Link href={`/logement/${code}/visites`} className={buttonVariants({ className: "w-full h-16 text-lg font-bold shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all rounded-2xl" })}>
+              <Link 
+                href={session ? `/logement/${code}/visites` : `/auth?redirect=/logement/${code}/visites`} 
+                className={buttonVariants({ className: "w-full h-16 text-lg font-bold shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all rounded-2xl" })}
+              >
                 <Calendar className="mr-2 h-6 w-6" />
                 Choisir un créneau de visite
               </Link>

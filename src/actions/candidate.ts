@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { verifySession } from "@/lib/auth";
 
 const SearchPropertySchema = z.object({
   code: z.string().min(1, "Veuillez saisir un code logement."),
@@ -38,22 +39,19 @@ export async function searchPropertyAction(prevState: any, formData: FormData) {
 
 const SubmitApplicationSchema = z.object({
   propertyId: z.string(),
-  firstName: z.string().min(2, "Prénom requis"),
-  lastName: z.string().min(2, "Nom requis"),
-  email: z.string().email("Email invalide"),
-  phone: z.string().min(10, "Téléphone invalide"),
   slotIds: z.array(z.string()).min(1, "Veuillez sélectionner au moins un créneau"),
 });
 
 export async function submitApplicationAction(prevState: any, formData: FormData) {
+  const session = await verifySession();
+  if (!session || session.role !== "CANDIDATE") {
+    return { error: "Vous devez être connecté en tant que candidat." };
+  }
+
   const slotIds = formData.getAll("slotIds") as string[];
   
   const parsed = SubmitApplicationSchema.safeParse({
     propertyId: formData.get("propertyId"),
-    firstName: formData.get("firstName"),
-    lastName: formData.get("lastName"),
-    email: formData.get("email"),
-    phone: formData.get("phone"),
     slotIds: slotIds,
   });
 
@@ -62,28 +60,13 @@ export async function submitApplicationAction(prevState: any, formData: FormData
   }
 
   const data = parsed.data;
-
-  // Créer ou mettre à jour le candidat
-  const candidate = await prisma.candidate.upsert({
-    where: { email: data.email },
-    update: {
-      firstName: data.firstName,
-      lastName: data.lastName,
-      phone: data.phone,
-    },
-    create: {
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      phone: data.phone,
-    },
-  });
+  const candidateId = session.id;
 
   // Vérifier si une candidature existe déjà pour ce logement
   const existingApp = await prisma.application.findFirst({
     where: {
       propertyId: data.propertyId,
-      candidateId: candidate.id,
+      candidateId: candidateId,
     }
   });
 
@@ -104,7 +87,7 @@ export async function submitApplicationAction(prevState: any, formData: FormData
     const newApp = await prisma.application.create({
       data: {
         propertyId: data.propertyId,
-        candidateId: candidate.id,
+        candidateId: candidateId,
         visitSlots: {
           connect: data.slotIds.map(id => ({ id }))
         }
