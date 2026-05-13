@@ -244,25 +244,41 @@ export async function updateDocumentStatusAction(prevState: any, formData: FormD
     if (status === "REJECTED") {
       try {
         const nodemailer = require("nodemailer");
-        const testAccount = await nodemailer.createTestAccount();
-        const transporter = nodemailer.createTransport({
-          host: "smtp.ethereal.email",
-          port: 587,
-          secure: false,
-          auth: { user: testAccount.user, pass: testAccount.pass },
-        });
+        let transporter;
+
+        if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+          transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: Number(process.env.SMTP_PORT) || 587,
+            secure: process.env.SMTP_SECURE === "true",
+            auth: {
+              user: process.env.SMTP_USER,
+              pass: process.env.SMTP_PASSWORD,
+            },
+          });
+        } else {
+          const testAccount = await nodemailer.createTestAccount();
+          transporter = nodemailer.createTransport({
+            host: "smtp.ethereal.email",
+            port: 587,
+            secure: false,
+            auth: { user: testAccount.user, pass: testAccount.pass },
+          });
+        }
 
         const info = await transporter.sendMail({
-          from: '"Bail-Bail Admin" <admin@bail-bail.com>',
+          from: process.env.EMAIL_FROM || '"Bail-Bail Admin" <admin@bail-bail.com>',
           to: doc.application.candidate.email,
           subject: "Action requise urgemment : Document refusé - Bail-Bail",
           text: `Bonjour ${doc.application.candidate.firstName},\n\nConcernant votre dossier pour le logement ${doc.application.property.title}, un document (${doc.type}) a été refusé.\n\nMotif : ${rejectionReason || 'Non spécifié'}\n\n⚠️ IMPORTANT : Vous devez vous connecter, modifier ce document et re-confirmer votre intérêt au plus vite. Sans action de votre part, votre place pour le créneau de visite sera libérée pour un autre candidat.\n\nCordialement, l'équipe Bail-Bail.`,
           html: `<b>Bonjour ${doc.application.candidate.firstName},</b><br><br>Concernant votre dossier pour le logement ${doc.application.property.title}, un document (<b>${doc.type}</b>) a été <b>refusé</b>.<br><br><b>Motif du refus :</b> ${rejectionReason || 'Non spécifié'}<br><br><div style="background-color: #FEF2F2; padding: 15px; border-left: 4px solid #EF4444; margin: 20px 0;"><b>⚠️ IMPORTANT :</b> Vous devez vous connecter à votre espace, supprimer le document refusé et en fournir un nouveau au plus vite pour re-confirmer votre intérêt.<br><br>Sans action rapide de votre part, <b>votre créneau de visite sera libéré</b> au profit d'un autre candidat.</div><br>Cordialement, l'équipe Bail-Bail.`,
         });
 
-        console.log("================ EMAILS SIMULÉS (REFUS DOCUMENT) ==================");
-        console.log("Email envoyé ! Visualisez-le ici : %s", nodemailer.getTestMessageUrl(info));
-        console.log("===================================================================");
+        if (!process.env.SMTP_HOST) {
+          console.log("================ EMAILS SIMULÉS (REFUS DOCUMENT) ==================");
+          console.log("Email envoyé ! Visualisez-le ici : %s", nodemailer.getTestMessageUrl(info));
+          console.log("===================================================================");
+        }
       } catch (err) {
         console.error("Erreur lors de l'envoi de l'email de refus :", err);
       }
