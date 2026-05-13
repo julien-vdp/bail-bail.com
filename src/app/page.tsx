@@ -66,20 +66,19 @@ export default function WaitingPage() {
           {/* Logo side (Right) */}
           <div className="w-full max-w-md lg:w-1/2 flex justify-center lg:justify-end animate-in fade-in slide-in-from-right-8 duration-1000 delay-300">
             <div className="relative flex items-center justify-center w-full max-w-[420px]">
-              {/* Very soft, elegant aura behind the logo */}
-              <div className="absolute inset-0 bg-primary/5 rounded-full blur-[80px]" />
+              {/* Stronger, elegant aura behind the logo */}
+              <div className="absolute inset-4 bg-primary/20 rounded-full blur-[60px]" />
+              <div className="absolute inset-12 bg-blue-400/20 rounded-full blur-[50px]" />
               
-              {/* Logo with mix-blend-multiply to hide its white background, NO drop-shadow to avoid the square edge */}
-              <div className="relative mix-blend-multiply w-full">
-                <Image 
-                  src="/logo.png" 
-                  alt="Bail-Bail Logo" 
-                  width={500} 
-                  height={500} 
-                  className="object-contain w-full h-auto"
-                  priority
-                />
-              </div>
+              {/* Logo with mix-blend-multiply directly on the image to make white transparent */}
+              <Image 
+                src="/logo.png" 
+                alt="Bail-Bail Logo" 
+                width={500} 
+                height={500} 
+                className="relative z-10 object-contain w-full h-auto mix-blend-multiply"
+                priority
+              />
             </div>
           </div>
         </div>
