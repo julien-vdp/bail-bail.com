@@ -1,121 +1,85 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ShieldCheck, FolderLock, Zap, ChevronRight, ArrowRight } from "lucide-react";
+import { CodeSearchForm } from "@/components/CodeSearchForm";
+import { verifySession } from "@/lib/auth";
 
-export default function WaitingPage() {
+export default async function HomePage() {
+  const session = await verifySession();
+
   return (
-    <div className="min-h-screen bg-white flex flex-col relative overflow-hidden selection:bg-primary/20">
-      {/* Background Ambient Orbs (très subtiles) */}
-      <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] rounded-full bg-slate-50 blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-50/50 blur-[120px]" />
-
-      {/* Navigation */}
-      <header className="relative z-50 flex items-center justify-between p-6 md:p-10 w-full max-w-7xl mx-auto">
-        <div className="flex items-center gap-3">
-          <span className="font-extrabold text-2xl text-slate-900 tracking-tight">
-            Bail-Bail
-          </span>
-        </div>
-        <Link 
-          href="/beta" 
-          className="group relative inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:text-primary transition-all shadow-sm"
-        >
-          <span>Espace Admin</span>
-          <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-        </Link>
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-between relative selection:bg-primary/20">
+      
+      {/* Header minimaliste */}
+      <header className="w-full max-w-7xl mx-auto p-6 flex items-center justify-end">
+        {session ? (
+          <Link 
+            href={session.role === "OWNER" ? "/admin" : "/compte"} 
+            className="text-slate-600 font-medium text-sm hover:text-primary transition-colors px-4 py-2 rounded-full hover:bg-slate-100"
+          >
+            Mon Espace
+          </Link>
+        ) : (
+          <Link 
+            href="/auth" 
+            className="text-slate-600 font-medium text-sm hover:text-primary transition-colors px-4 py-2 rounded-full hover:bg-slate-100"
+          >
+            Se connecter
+          </Link>
+        )}
       </header>
 
-      {/* Main Content Area */}
-      <main className="relative z-20 flex-1 flex flex-col items-center px-4 md:px-10 pb-20 pt-4">
+      {/* Main Content (Centré façon Google) */}
+      <main className="flex-1 flex flex-col items-center justify-center w-full px-4 -mt-20">
         
-        {/* Hero Section */}
-        <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center gap-16 lg:gap-24 mb-20">
-          
-          {/* Text side (Left) */}
-          <div className="flex-1 space-y-8 text-center lg:text-left z-30">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 shadow-sm text-primary font-semibold text-sm animate-in fade-in slide-in-from-bottom-4 duration-1000">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
-              </span>
-              Lancement de la plateforme 2026
-            </div>
-
-            <h1 className="text-5xl md:text-6xl lg:text-[4.5rem] font-extrabold text-slate-900 tracking-tight leading-[1.1] animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-150">
-              La gestion locative,<br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">
-                sans le chaos.
-              </span>
-            </h1>
-            
-            <p className="text-lg md:text-xl text-slate-600 font-medium max-w-2xl mx-auto lg:mx-0 leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
-              Constitution, sécurisation et sélection des dossiers centralisés dans une interface conçue pour votre tranquillité d'esprit. Fini les dizaines d'e-mails à trier.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500">
-              <Link 
-                href="/beta" 
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-primary text-white rounded-2xl font-bold text-lg shadow-lg shadow-primary/20 hover:bg-primary/90 hover:-translate-y-1 transition-all duration-300 group"
-              >
-                Découvrir la solution
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
-          </div>
-
-          {/* Logo side (Right) */}
-          <div className="w-full max-w-md lg:w-1/2 flex justify-center lg:justify-end animate-in fade-in slide-in-from-right-8 duration-1000 delay-300">
-            <div className="relative flex items-center justify-center w-full max-w-[420px]">
-              
-              <Image 
-                src="/logo.png" 
-                alt="Bail-Bail Logo" 
-                width={500} 
-                height={500} 
-                className="relative z-10 object-contain w-full h-auto"
-                priority
-              />
-            </div>
-          </div>
+        <div className="mb-10 text-center">
+          <Image 
+            src="/logo.png" 
+            alt="Bail-Bail Logo" 
+            width={120} 
+            height={120} 
+            className="mx-auto drop-shadow-sm mb-6"
+            priority
+          />
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+            Bail-Bail
+          </h1>
+          <p className="text-slate-500 mt-2 font-medium">Le portail privatif de votre future location</p>
         </div>
 
-        {/* Features Cards Section (Bottom) */}
-        <div className="w-full max-w-7xl grid grid-cols-1 md:grid-cols-3 gap-6 z-30 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-700">
-          
-          <div className="relative flex flex-col gap-4 p-6 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition duration-300 transform hover:-translate-y-1">
-            <div className="p-3.5 rounded-2xl bg-primary/10 text-primary w-fit">
-              <ShieldCheck className="w-7 h-7" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">Sécurité Maximale</h3>
-              <p className="text-slate-500 leading-relaxed text-sm">Les documents sensibles de vos candidats sont chiffrés. Protégez leurs données et votre responsabilité.</p>
-            </div>
-          </div>
-
-          <div className="relative flex flex-col gap-4 p-6 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition duration-300 transform hover:-translate-y-1">
-            <div className="p-3.5 rounded-2xl bg-blue-500/10 text-blue-600 w-fit">
-              <FolderLock className="w-7 h-7" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">Dossiers Centralisés</h3>
-              <p className="text-slate-500 leading-relaxed text-sm">Naviguez, comparez et gérez les profils de vos candidats locataires dans un Dashboard ergonomique.</p>
-            </div>
-          </div>
-
-          <div className="relative flex flex-col gap-4 p-6 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition duration-300 transform hover:-translate-y-1">
-            <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-600 w-fit">
-              <Zap className="w-7 h-7" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">Gain de temps</h3>
-              <p className="text-slate-500 leading-relaxed text-sm">Génération automatique des créneaux de visites et notifications envoyées aux candidats sans effort.</p>
-            </div>
-          </div>
-
+        <div className="w-full max-w-lg mb-8">
+          <CodeSearchForm />
         </div>
 
+        <div className="text-center">
+          <Link 
+            href="/annonces" 
+            className="text-sm text-slate-400 hover:text-slate-600 transition-colors underline underline-offset-4"
+          >
+            Vous n'avez pas de code ? Consultez toutes nos annonces.
+          </Link>
+        </div>
       </main>
 
+      {/* Footer / Espace Publicitaire */}
+      <footer className="w-full border-t border-slate-200 bg-white py-6">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col items-center justify-center">
+          <p className="text-xs text-slate-400 mb-4">Espace Sponsorisé</p>
+          
+          {/* AdSense Placeholder */}
+          <div className="w-full max-w-[728px] h-[90px] bg-slate-100 border border-dashed border-slate-300 rounded flex items-center justify-center text-slate-400 text-sm overflow-hidden">
+            {/* 
+              Intégration Google AdSense future.
+              Exemple de code à insérer ici :
+              <ins className="adsbygoogle"
+                   style={{display: 'inline-block', width: '728px', height: '90px'}}
+                   data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                   data-ad-slot="XXXXXXXXXX"></ins>
+              <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+            */}
+            [ Emplacement Publicitaire Google AdSense (728x90) ]
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
