@@ -3,6 +3,7 @@ import { SignJWT, jwtVerify } from "jose";
 
 export type SessionPayload = {
   id: string;
+  email: string;
   name: string;
   role: "OWNER" | "CANDIDATE";
 };

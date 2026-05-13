@@ -25,6 +25,18 @@ export default async function RootLayout({
 }>) {
   const { verifySession } = await import("@/lib/auth");
   const session = await verifySession();
+  
+  let hasOtherRole = false;
+  if (session) {
+    const { prisma } = await import("@/lib/prisma");
+    if (session.role === "OWNER") {
+      const candidate = await prisma.candidate.findUnique({ where: { email: session.email } });
+      hasOtherRole = !!candidate;
+    } else {
+      const owner = await prisma.user.findUnique({ where: { email: session.email } });
+      hasOtherRole = !!owner;
+    }
+  }
 
   return (
     <html
@@ -33,7 +45,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <Header session={session} />
+        <Header session={session} hasOtherRole={hasOtherRole} />
         <main className="flex-1 flex flex-col">
           {children}
         </main>

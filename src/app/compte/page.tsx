@@ -10,6 +10,15 @@ export default async function AccountPage() {
   }
 
   const user = res.data;
+  const { prisma } = await import("@/lib/prisma");
+  let hasOtherRole = false;
+  if (user.role === "OWNER") {
+    const candidate = await prisma.candidate.findUnique({ where: { email: user.email } });
+    hasOtherRole = !!candidate;
+  } else {
+    const owner = await prisma.user.findUnique({ where: { email: user.email } });
+    hasOtherRole = !!owner;
+  }
 
   return (
     <div className="max-w-3xl mx-auto p-6 pt-12">
@@ -21,7 +30,7 @@ export default async function AccountPage() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-        <AccountForm initialData={user} />
+        <AccountForm initialData={user} hasOtherRole={hasOtherRole} />
       </div>
     </div>
   );

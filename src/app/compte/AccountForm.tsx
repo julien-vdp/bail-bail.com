@@ -3,9 +3,11 @@
 import { useState, useTransition } from "react";
 import { updateAccount, logout } from "@/actions/auth";
 import { Loader2, LogOut, CheckCircle2 } from "lucide-react";
+import { SwitchRoleButton } from "@/components/SwitchRoleButton";
+import { LogoutButton } from "@/components/LogoutButton";
 import { useRouter } from "next/navigation";
 
-export function AccountForm({ initialData }: { initialData: any }) {
+export function AccountForm({ initialData, hasOtherRole = false }: { initialData: any, hasOtherRole?: boolean }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -79,13 +81,10 @@ export function AccountForm({ initialData }: { initialData: any }) {
       </div>
 
       <div className="border-t border-slate-200 pt-6 mt-6 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => logout()}
-          className="text-red-500 hover:text-red-600 font-medium text-sm flex items-center gap-2"
-        >
-          <LogOut className="w-4 h-4" /> Déconnexion
-        </button>
+        <div className="flex items-center gap-4">
+          <LogoutButton variant="ghost" />
+          {hasOtherRole && <SwitchRoleButton variant="ghost" />}
+        </div>
 
         <button
           type="submit"

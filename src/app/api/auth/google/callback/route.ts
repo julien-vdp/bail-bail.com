@@ -88,6 +88,7 @@ export async function GET(request: Request) {
     // 4. Create local session
     await createSession({
       id: sessionId,
+      email: email,
       name: sessionName,
       role: role,
     });

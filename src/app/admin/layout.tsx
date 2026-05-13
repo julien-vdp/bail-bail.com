@@ -1,7 +1,10 @@
 import Link from "next/link";
-import { Shield, Home, FolderOpen, LogOut } from "lucide-react";
+import { Shield, Home, FolderOpen } from "lucide-react";
 import { getSimulatedUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { LogoutButton } from "@/components/LogoutButton";
+import { SwitchRoleButton } from "@/components/SwitchRoleButton";
+import { prisma } from "@/lib/prisma";
 
 export default async function AdminLayout({
   children,
@@ -12,6 +15,9 @@ export default async function AdminLayout({
   if (!user || user.role !== "OWNER") {
     redirect("/");
   }
+
+  const candidate = await prisma.candidate.findUnique({ where: { email: user.email } });
+  const hasOtherRole = !!candidate;
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -31,9 +37,10 @@ export default async function AdminLayout({
           </Link>
         </nav>
         <div className="p-4 border-t border-slate-800">
-          <Link href="/" className="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white transition-colors">
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium text-sm">Retour au site</span>
+          {hasOtherRole && <SwitchRoleButton variant="sidebar" className="hover:bg-slate-800 rounded-md mb-2" />}
+          <LogoutButton variant="sidebar" className="hover:bg-slate-800 rounded-md" />
+          <Link href="/" className="flex items-center gap-3 px-3 py-2 mt-2 text-slate-400 hover:text-white transition-colors hover:bg-slate-800 rounded-md">
+            <span className="font-medium text-sm">Retour au site public</span>
           </Link>
         </div>
       </aside>

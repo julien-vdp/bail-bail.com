@@ -3,8 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SwitchRoleButton } from "./SwitchRoleButton";
+import { LogoutButton } from "./LogoutButton";
 
-export function Header({ session }: { session: any }) {
+export function Header({ session, hasOtherRole = false }: { session: any, hasOtherRole?: boolean }) {
   const pathname = usePathname();
   
   if (pathname === "/" || pathname === "/beta" || pathname.startsWith("/logement") || pathname.startsWith("/db-explorer") || pathname.startsWith("/auth")) {
@@ -26,9 +28,13 @@ export function Header({ session }: { session: any }) {
         </Link>
         <div className="ml-auto flex items-center gap-4">
           {session ? (
-            <Link href={session.role === "OWNER" ? "/admin" : "/compte"} className="text-sm font-semibold bg-primary/10 text-primary px-4 py-2 rounded-full hover:bg-primary/20 transition-colors">
-              Mon Espace
-            </Link>
+            <>
+              {hasOtherRole && <SwitchRoleButton variant="ghost" />}
+              <Link href={session.role === "OWNER" ? "/admin" : "/compte"} className="text-sm font-semibold bg-primary/10 text-primary px-4 py-2 rounded-full hover:bg-primary/20 transition-colors">
+                Mon Espace
+              </Link>
+              <LogoutButton variant="ghost" />
+            </>
           ) : (
             <Link href="/auth" className="text-sm font-semibold bg-primary text-white px-4 py-2 rounded-full hover:bg-primary/90 transition-colors shadow-sm">
               Se connecter

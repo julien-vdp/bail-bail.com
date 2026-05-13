@@ -27,8 +27,7 @@ export async function register(formData: FormData, role: "OWNER" | "CANDIDATE") 
       const user = await prisma.user.create({
         data: { email, name, passwordHash, role: "OWNER" },
       });
-
-      await createSession({ id: user.id, name: user.name, role: "OWNER" });
+      await createSession({ id: user.id, email: user.email, name: user.name, role: "OWNER" });
 
     } else {
       const firstName = formData.get("firstName") as string;
@@ -43,7 +42,7 @@ export async function register(formData: FormData, role: "OWNER" | "CANDIDATE") 
         data: { email, firstName, lastName, phone, passwordHash },
       });
 
-      await createSession({ id: candidate.id, name: `${candidate.firstName} ${candidate.lastName}`, role: "CANDIDATE" });
+      await createSession({ id: candidate.id, email: candidate.email, name: `${candidate.firstName} ${candidate.lastName}`, role: "CANDIDATE" });
     }
 
     return { success: true };
@@ -67,7 +66,7 @@ export async function login(formData: FormData, role: "OWNER" | "CANDIDATE") {
       const isValid = await bcrypt.compare(password, user.passwordHash);
       if (!isValid) return { error: "Identifiants incorrects." };
 
-      await createSession({ id: user.id, name: user.name, role: "OWNER" });
+      await createSession({ id: user.id, email: user.email, name: user.name, role: "OWNER" });
     } else {
       const candidate = await prisma.candidate.findUnique({ where: { email } });
       if (!candidate || !candidate.passwordHash) return { error: "Identifiants incorrects ou compte non initialisé avec un mot de passe." };
@@ -75,7 +74,7 @@ export async function login(formData: FormData, role: "OWNER" | "CANDIDATE") {
       const isValid = await bcrypt.compare(password, candidate.passwordHash);
       if (!isValid) return { error: "Identifiants incorrects." };
 
-      await createSession({ id: candidate.id, name: `${candidate.firstName} ${candidate.lastName}`, role: "CANDIDATE" });
+      await createSession({ id: candidate.id, email: candidate.email, name: `${candidate.firstName} ${candidate.lastName}`, role: "CANDIDATE" });
     }
 
     return { success: true };
@@ -88,6 +87,36 @@ export async function login(formData: FormData, role: "OWNER" | "CANDIDATE") {
 export async function logout() {
   await deleteSession();
   redirect("/");
+}
+
+export async function switchRoleAction() {
+  const session = await verifySession();
+  if (!session) return { error: "Non authentifié" };
+
+  if (session.role === "OWNER") {
+    const candidate = await prisma.candidate.findUnique({ where: { email: session.email } });
+    if (candidate) {
+      await createSession({
+        id: candidate.id,
+        email: candidate.email,
+        name: `${candidate.firstName} ${candidate.lastName}`,
+        role: "CANDIDATE"
+      });
+      redirect("/compte");
+    }
+  } else {
+    const owner = await prisma.user.findUnique({ where: { email: session.email } });
+    if (owner) {
+      await createSession({
+        id: owner.id,
+        email: owner.email,
+        name: owner.name,
+        role: "OWNER"
+      });
+      redirect("/admin");
+    }
+  }
+  return { error: "Compte alternatif non trouvé" };
 }
 
 export async function getAccountInfo() {
@@ -152,7 +181,16 @@ export async function updateAccount(formData: FormData) {
 // --- ANCIEN SYSTEME POUR COMPATIBILITE PENDANT LA TRANSITION ---
 
 export async function loginAsAction(id: string, name: string, role: "OWNER" | "CANDIDATE") {
-  await createSession({ id, name, role });
+  let email = "";
+  if (role === "OWNER") {
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (user) email = user.email;
+  } else {
+    const candidate = await prisma.candidate.findUnique({ where: { id } });
+    if (candidate) email = candidate.email;
+  }
+
+  await createSession({ id, email, name, role });
   
   if (role === "OWNER") {
     redirect("/admin");
