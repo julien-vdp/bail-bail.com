@@ -46,6 +46,9 @@ export default async function RootLayout({
       className={`${fontSans.variable} font-sans h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7186584588652268" crossOrigin="anonymous"></script>
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <Header session={session} hasOtherRole={hasOtherRole} />
         <main className="flex-1 flex flex-col">

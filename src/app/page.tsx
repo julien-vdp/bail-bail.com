@@ -65,18 +65,12 @@ export default async function HomePage() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col items-center justify-center">
           <p className="text-xs text-slate-400 mb-4">Espace Sponsorisé</p>
           
-          {/* AdSense Placeholder */}
-          <div className="w-full max-w-[728px] h-[90px] bg-slate-100 border border-dashed border-slate-300 rounded flex items-center justify-center text-slate-400 text-sm overflow-hidden">
-            {/* 
-              Intégration Google AdSense future.
-              Exemple de code à insérer ici :
-              <ins className="adsbygoogle"
-                   style={{display: 'inline-block', width: '728px', height: '90px'}}
-                   data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-                   data-ad-slot="XXXXXXXXXX"></ins>
-              <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-            */}
-            [ Emplacement Publicitaire Google AdSense (728x90) ]
+          {/* AdSense Unit */}
+          <div className="w-full max-w-[728px] min-h-[90px] flex items-center justify-center overflow-hidden">
+            <ins className="adsbygoogle"
+                 style={{display: 'inline-block', width: '728px', height: '90px'}}
+                 data-ad-client="ca-pub-7186584588652268"></ins>
+            <script dangerouslySetInnerHTML={{ __html: '(adsbygoogle = window.adsbygoogle || []).push({});' }} />
           </div>
         </div>
       </footer>
