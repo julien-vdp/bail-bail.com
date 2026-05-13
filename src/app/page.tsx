@@ -7,21 +7,33 @@ export default async function HomePage() {
   const session = await verifySession();
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-between relative selection:bg-primary/20">
+    <div className="min-h-screen flex flex-col items-center justify-between relative selection:bg-primary/20 text-white overflow-hidden">
       
+      {/* Background Video */}
+      <video 
+        autoPlay 
+        loop 
+        muted 
+        playsInline
+        className="fixed inset-0 w-full h-full object-cover -z-20"
+      >
+        <source src="https://assets.mixkit.co/videos/preview/mixkit-modern-apartment-building-exterior-4416-large.mp4" type="video/mp4" />
+      </video>
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-[2px] -z-10" />
+
       {/* Header minimaliste */}
-      <header className="w-full max-w-7xl mx-auto p-6 flex items-center justify-end">
+      <header className="w-full max-w-7xl mx-auto p-6 flex items-center justify-end relative z-10">
         {session ? (
           <Link 
             href={session.role === "OWNER" ? "/admin" : "/compte"} 
-            className="text-slate-600 font-medium text-sm hover:text-primary transition-colors px-4 py-2 rounded-full hover:bg-slate-100"
+            className="text-white/80 font-semibold text-sm hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10"
           >
             Mon Espace
           </Link>
         ) : (
           <Link 
             href="/auth" 
-            className="text-slate-600 font-medium text-sm hover:text-primary transition-colors px-4 py-2 rounded-full hover:bg-slate-100"
+            className="text-white/80 font-semibold text-sm hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10"
           >
             Se connecter
           </Link>
@@ -29,21 +41,23 @@ export default async function HomePage() {
       </header>
 
       {/* Main Content (Centré façon Google) */}
-      <main className="flex-1 flex flex-col items-center justify-center w-full px-4 -mt-20">
+      <main className="flex-1 flex flex-col items-center justify-center w-full px-4 -mt-20 relative z-10">
         
         <div className="mb-10 text-center">
-          <Image 
-            src="/logo.png" 
-            alt="Bail-Bail Logo" 
-            width={120} 
-            height={120} 
-            className="mx-auto drop-shadow-sm mb-6"
-            priority
-          />
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+          <div className="bg-white/10 p-3 rounded-2xl shadow-2xl backdrop-blur-md border border-white/20 w-fit mx-auto mb-6">
+            <Image 
+              src="/logo.png" 
+              alt="Bail-Bail Logo" 
+              width={100} 
+              height={100} 
+              className="drop-shadow-md rounded-xl bg-white p-2"
+              priority
+            />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight drop-shadow-lg">
             Bail-Bail
           </h1>
-          <p className="text-slate-500 mt-2 font-medium">Le portail privatif de votre future location</p>
+          <p className="text-white/80 mt-3 font-medium text-lg drop-shadow-md">Le portail privatif de votre future location</p>
         </div>
 
         <div className="w-full max-w-lg mb-8">
@@ -53,7 +67,7 @@ export default async function HomePage() {
         <div className="text-center">
           <Link 
             href="/annonces" 
-            className="text-sm text-slate-400 hover:text-slate-600 transition-colors underline underline-offset-4"
+            className="text-sm font-medium text-white/60 hover:text-white transition-colors underline underline-offset-4 drop-shadow-sm"
           >
             Vous n'avez pas de code ? Consultez toutes nos annonces.
           </Link>
@@ -61,7 +75,7 @@ export default async function HomePage() {
       </main>
 
       {/* Footer / Espace Publicitaire */}
-      <footer className="w-full border-t border-slate-200 bg-white py-6">
+      <footer className="w-full bg-slate-900/80 backdrop-blur-md border-t border-white/10 py-6 relative z-10">
         <div className="max-w-7xl mx-auto px-4 flex flex-col items-center justify-center">
           <p className="text-xs text-slate-400 mb-4">Espace Sponsorisé</p>
           
