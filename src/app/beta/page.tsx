@@ -72,10 +72,10 @@ export default async function HomePage() {
               🚀 Version Production - Officiellement en ligne !
             </div>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.1] drop-shadow-xl">
-              Trouvez votre chez-vous, <span className="text-primary brightness-125">sereinement</span>.
+              Vos visites et dossiers locatifs, <span className="text-primary brightness-125">simplifiés</span>.
             </h1>
             <p className="text-lg md:text-xl text-white/90 max-w-xl mx-auto lg:mx-0 drop-shadow-md font-medium">
-              Découvrez nos logements disponibles, choisissez un créneau de visite et déposez votre dossier de location en toute sécurité, le tout en quelques clics.
+              De la prise de rendez-vous en ligne jusqu'au dépôt de votre dossier chiffré, organisez vos visites de logements en toute fluidité.
             </p>
           </div>
 
