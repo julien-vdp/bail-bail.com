@@ -147,17 +147,29 @@ export function CandidateWarningScreen({
                 </Link>
               </div>
             ) : (
-              <Button 
-                type="submit" 
-                className={`w-full h-14 text-lg font-bold shadow-lg transition-colors ${property.isEligibleGLI ? "bg-red-600 hover:bg-red-700 text-white" : "bg-slate-900 hover:bg-slate-800 text-white"}`}
-                disabled={isPending}
-              >
-                {isPending ? (
-                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Chargement...</>
-                ) : (
-                  "J'ai compris, je continue vers mon dossier"
-                )}
-              </Button>
+              <div className="space-y-3">
+                <Button 
+                  type="submit" 
+                  className={`w-full h-14 text-lg font-bold shadow-lg transition-colors ${property.isEligibleGLI ? "bg-red-600 hover:bg-red-700 text-white" : "bg-slate-900 hover:bg-slate-800 text-white"}`}
+                  disabled={isPending}
+                >
+                  {isPending ? (
+                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Chargement...</>
+                  ) : (
+                    "J'ai compris, je continue vers mon dossier"
+                  )}
+                </Button>
+                <Link href="/" className="block">
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    className="w-full h-14 text-lg font-medium text-slate-700"
+                    disabled={isPending}
+                  >
+                    Je retourne à la liste des annonces
+                  </Button>
+                </Link>
+              </div>
             )}
           </form>
         </div>
