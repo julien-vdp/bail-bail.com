@@ -9,16 +9,17 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-between relative selection:bg-primary/20 text-white overflow-hidden">
       
-      {/* Background Video (Vimeo) */}
-      <div className="fixed inset-0 w-full h-full -z-20 overflow-hidden pointer-events-none bg-slate-900">
-        <iframe 
-          src="https://player.vimeo.com/video/335805545?background=1&autoplay=1&loop=1&byline=0&title=0&muted=1"
-          className="absolute top-1/2 left-1/2 w-[200vw] h-[200vh] min-w-[100vw] min-h-[100vh] -translate-x-1/2 -translate-y-1/2 object-cover opacity-90"
-          frameBorder="0"
-          allow="autoplay; fullscreen"
+      {/* Background Animated Image (Ken Burns Effect) */}
+      <div className="fixed inset-0 w-full h-full -z-20 overflow-hidden bg-slate-900 pointer-events-none">
+        <Image 
+          src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop" 
+          alt="Modern Architecture" 
+          fill
+          priority
+          className="object-cover animate-ken-burns opacity-60"
         />
       </div>
-      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-[2px] -z-10 pointer-events-none" />
+      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] -z-10 pointer-events-none" />
 
       {/* Header minimaliste */}
       <header className="w-full max-w-7xl mx-auto p-6 flex items-center justify-end relative z-10">
