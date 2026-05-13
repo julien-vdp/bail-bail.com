@@ -65,16 +65,18 @@ export default function WaitingPage() {
 
           {/* Logo side (Right) */}
           <div className="w-full max-w-md lg:w-1/2 flex justify-center lg:justify-end animate-in fade-in slide-in-from-right-8 duration-1000 delay-300">
-            <div className="relative group w-full aspect-square max-w-[400px]">
-              <div className="absolute -inset-2 bg-gradient-to-tr from-primary/30 to-blue-400/30 rounded-[3rem] blur-xl opacity-70 group-hover:opacity-100 transition duration-700" />
+            <div className="relative group w-full flex items-center justify-center max-w-[450px]">
+              {/* Luminous blue/primary glow behind the logo */}
+              <div className="absolute inset-10 bg-blue-500/20 rounded-full blur-3xl opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" />
+              <div className="absolute inset-20 bg-primary/20 rounded-full blur-2xl opacity-60 group-hover:opacity-100 transition-all duration-700" />
               
-              <div className="relative h-full w-full bg-white/80 backdrop-blur-xl p-12 rounded-[3rem] shadow-2xl border border-white flex items-center justify-center transform transition duration-500 hover:-translate-y-2">
+              <div className="relative transform transition duration-500 hover:-translate-y-2">
                 <Image 
                   src="/logo.png" 
                   alt="Bail-Bail Logo" 
-                  width={300} 
-                  height={300} 
-                  className="object-contain drop-shadow-md"
+                  width={450} 
+                  height={450} 
+                  className="object-contain drop-shadow-2xl mix-blend-multiply"
                   priority
                 />
               </div>
