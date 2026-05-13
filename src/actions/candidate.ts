@@ -150,7 +150,7 @@ export async function validateDossierAction(prevState: any, formData: FormData) 
 <body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8fafc;">
   <div style="max-w: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-top: 40px; margin-bottom: 40px;">
     <div style="text-align: center; margin-bottom: 30px;">
-      <img src="https://raw.githubusercontent.com/julien-vdp/bail-bail.com/main/public/logo.png" alt="Bail-Bail Logo" style="width: 80px; height: 80px; border-radius: 16px; object-fit: contain;" />
+      <img src="https://www.bail-bail.com/logo.png" alt="Bail-Bail Logo" style="width: 80px; height: 80px; border-radius: 16px; object-fit: contain;" />
       <h1 style="color: #0f172a; margin-top: 20px; font-size: 24px;">${title}</h1>
     </div>
     <div style="color: #334155; font-size: 16px; line-height: 1.6;">
