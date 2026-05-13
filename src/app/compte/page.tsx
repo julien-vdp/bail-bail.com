@@ -12,12 +12,14 @@ export default async function AccountPage() {
   const user = res.data;
   const { prisma } = await import("@/lib/prisma");
   let hasOtherRole = false;
-  if (user.role === "OWNER") {
-    const candidate = await prisma.candidate.findUnique({ where: { email: user.email } });
-    hasOtherRole = !!candidate;
-  } else {
-    const owner = await prisma.user.findUnique({ where: { email: user.email } });
-    hasOtherRole = !!owner;
+  if (user.email) {
+    if (user.role === "OWNER") {
+      const candidate = await prisma.candidate.findUnique({ where: { email: user.email } });
+      hasOtherRole = !!candidate;
+    } else {
+      const owner = await prisma.user.findUnique({ where: { email: user.email } });
+      hasOtherRole = !!owner;
+    }
   }
 
   return (

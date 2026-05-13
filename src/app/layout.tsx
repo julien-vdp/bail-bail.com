@@ -29,12 +29,14 @@ export default async function RootLayout({
   let hasOtherRole = false;
   if (session) {
     const { prisma } = await import("@/lib/prisma");
-    if (session.role === "OWNER") {
-      const candidate = await prisma.candidate.findUnique({ where: { email: session.email } });
-      hasOtherRole = !!candidate;
-    } else {
-      const owner = await prisma.user.findUnique({ where: { email: session.email } });
-      hasOtherRole = !!owner;
+    if (session.email) {
+      if (session.role === "OWNER") {
+        const candidate = await prisma.candidate.findUnique({ where: { email: session.email } });
+        hasOtherRole = !!candidate;
+      } else {
+        const owner = await prisma.user.findUnique({ where: { email: session.email } });
+        hasOtherRole = !!owner;
+      }
     }
   }
 

@@ -16,7 +16,7 @@ export default async function AdminLayout({
     redirect("/");
   }
 
-  const candidate = await prisma.candidate.findUnique({ where: { email: user.email } });
+  const candidate = user.email ? await prisma.candidate.findUnique({ where: { email: user.email } }) : null;
   const hasOtherRole = !!candidate;
 
   return (

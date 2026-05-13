@@ -91,7 +91,7 @@ export async function logout() {
 
 export async function switchRoleAction() {
   const session = await verifySession();
-  if (!session) return { error: "Non authentifié" };
+  if (!session || !session.email) return { error: "Non authentifié ou session trop ancienne (veuillez vous reconnecter)" };
 
   if (session.role === "OWNER") {
     const candidate = await prisma.candidate.findUnique({ where: { email: session.email } });
