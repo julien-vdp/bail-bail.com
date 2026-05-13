@@ -3,6 +3,7 @@ import { Nunito } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { UserSwitcher } from "@/components/UserSwitcher";
+import { AdFooter } from "@/components/AdFooter";
 
 const fontSans = Nunito({
   variable: "--font-sans",
@@ -55,6 +56,7 @@ export default async function RootLayout({
           {children}
         </main>
         <UserSwitcher />
+        <AdFooter />
       </body>
     </html>
   );
