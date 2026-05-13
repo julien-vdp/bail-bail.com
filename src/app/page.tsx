@@ -9,17 +9,16 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-between relative selection:bg-primary/20 text-white overflow-hidden">
       
-      {/* Background Video */}
-      <video 
-        autoPlay 
-        loop 
-        muted 
-        playsInline
-        className="fixed inset-0 w-full h-full object-cover -z-20"
-      >
-        <source src="https://assets.mixkit.co/videos/preview/mixkit-modern-apartment-building-exterior-4416-large.mp4" type="video/mp4" />
-      </video>
-      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-[2px] -z-10" />
+      {/* Background Video (Vimeo) */}
+      <div className="fixed inset-0 w-full h-full -z-20 overflow-hidden pointer-events-none bg-slate-900">
+        <iframe 
+          src="https://player.vimeo.com/video/335805545?background=1&autoplay=1&loop=1&byline=0&title=0&muted=1"
+          className="absolute top-1/2 left-1/2 w-[200vw] h-[200vh] min-w-[100vw] min-h-[100vh] -translate-x-1/2 -translate-y-1/2 object-cover opacity-90"
+          frameBorder="0"
+          allow="autoplay; fullscreen"
+        />
+      </div>
+      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-[2px] -z-10 pointer-events-none" />
 
       {/* Header minimaliste */}
       <header className="w-full max-w-7xl mx-auto p-6 flex items-center justify-end relative z-10">
