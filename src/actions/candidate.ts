@@ -144,23 +144,61 @@ export async function validateDossierAction(prevState: any, formData: FormData) 
     }
   });
 
+  const emailWrapper = (title: string, content: string) => `
+<!DOCTYPE html>
+<html>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8fafc;">
+  <div style="max-w: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-top: 40px; margin-bottom: 40px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+      <img src="https://raw.githubusercontent.com/julien-vdp/bail-bail.com/main/public/logo.png" alt="Bail-Bail Logo" style="width: 80px; height: 80px; border-radius: 16px; object-fit: contain;" />
+      <h1 style="color: #0f172a; margin-top: 20px; font-size: 24px;">${title}</h1>
+    </div>
+    <div style="color: #334155; font-size: 16px; line-height: 1.6;">
+      ${content}
+    </div>
+    <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+      <p style="color: #94a3b8; font-size: 14px;">Bail-Bail - La location simplifiée</p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+  // Email au propriétaire
   if (app.property.owner?.email) {
     await sendEmail({
       to: app.property.owner.email,
       subject: `Nouveau dossier complet : ${app.property.title}`,
-      html: `
-        <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-          <h2 style="color: #1e293b;">Nouveau dossier complet</h2>
-          <p>Bonjour <strong>${app.property.owner.name}</strong>,</p>
-          <p>Le candidat <strong>${app.candidate.firstName} ${app.candidate.lastName}</strong> a finalisé le dépôt de ses pièces justificatives pour votre annonce <strong>${app.property.title}</strong>.</p>
-          <p>Le statut de sa candidature est passé à <span style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">Complet</span>.</p>
-          <div style="text-align: center; margin-top: 30px;">
-            <a href="https://www.bail-bail.com/auth" style="padding: 12px 24px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Accéder à mon espace propriétaire</a>
-          </div>
+      html: emailWrapper(
+        "Nouveau dossier complet",
+        `
+        <p>Bonjour <strong>${app.property.owner.name}</strong>,</p>
+        <p>Le candidat <strong>${app.candidate.firstName} ${app.candidate.lastName}</strong> a finalisé le dépôt de ses pièces justificatives pour votre annonce <strong>${app.property.title}</strong>.</p>
+        <p>Le statut de sa candidature est passé à <span style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-weight: bold;">Complet</span>.</p>
+        <div style="text-align: center; margin-top: 30px; margin-bottom: 10px;">
+          <a href="https://bail-bail.com/auth" style="padding: 12px 24px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Accéder à mon espace propriétaire</a>
         </div>
-      `
+        `
+      )
     });
   }
+
+  // Email au candidat
+  await sendEmail({
+    to: app.candidate.email,
+    subject: `Votre dossier est complet : ${app.property.title}`,
+    html: emailWrapper(
+      "Dossier envoyé avec succès",
+      `
+      <p>Bonjour <strong>${app.candidate.firstName}</strong>,</p>
+      <p>Félicitations ! Vous avez finalisé le dépôt de vos pièces justificatives pour le logement <strong>${app.property.title}</strong>.</p>
+      <p>Votre dossier a été automatiquement transmis au propriétaire. Celui-ci l'étudiera dans les plus brefs délais et reviendra vers vous.</p>
+      <div style="text-align: center; margin-top: 30px; margin-bottom: 10px;">
+        <a href="https://bail-bail.com/dossier/${app.id}" style="padding: 12px 24px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Suivre ma candidature</a>
+      </div>
+      `
+    )
+  });
 
   return { success: true };
 }

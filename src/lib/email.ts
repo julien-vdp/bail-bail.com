@@ -10,32 +10,26 @@ export async function sendEmail({
   html: string;
 }) {
   try {
-    // For demo purposes: Using Ethereal Email since no SMTP credentials are provided
-    // In production, you would use:
-    // const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST, ... })
-    const testAccount = await nodemailer.createTestAccount();
-
     const transporter = nodemailer.createTransport({
-      host: "smtp.ethereal.email",
-      port: 587,
-      secure: false,
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_PORT === '465',
       auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
       },
     });
 
     const info = await transporter.sendMail({
-      from: '"Bail-Bail Admin" <no-reply@bail-bail.com>',
+      from: `"Bail-Bail" <${process.env.SMTP_USER}>`,
       to,
       subject,
       html,
     });
 
     console.log("Message sent: %s", info.messageId);
-    console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
     
-    return { success: true, previewUrl: nodemailer.getTestMessageUrl(info) };
+    return { success: true };
   } catch (error) {
     console.error("Error sending email:", error);
     return { success: false, error };
