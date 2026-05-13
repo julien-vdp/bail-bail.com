@@ -4,10 +4,10 @@ import { ShieldCheck, FolderLock, Zap, ChevronRight, ArrowRight } from "lucide-r
 
 export default function WaitingPage() {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden selection:bg-primary/20">
+    <div className="min-h-screen bg-white flex flex-col relative overflow-hidden selection:bg-primary/20">
       {/* Background Ambient Orbs (très subtiles) */}
-      <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] rounded-full bg-primary/5 blur-[120px] animate-pulse" style={{ animationDuration: '10s' }} />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-500/5 blur-[120px] animate-pulse" style={{ animationDuration: '15s' }} />
+      <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] rounded-full bg-slate-50 blur-[120px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-50/50 blur-[120px]" />
 
       {/* Navigation */}
       <header className="relative z-50 flex items-center justify-between p-6 md:p-10 w-full max-w-7xl mx-auto">
@@ -66,17 +66,13 @@ export default function WaitingPage() {
           {/* Logo side (Right) */}
           <div className="w-full max-w-md lg:w-1/2 flex justify-center lg:justify-end animate-in fade-in slide-in-from-right-8 duration-1000 delay-300">
             <div className="relative flex items-center justify-center w-full max-w-[420px]">
-              {/* Stronger, elegant aura behind the logo */}
-              <div className="absolute inset-4 bg-primary/20 rounded-full blur-[60px]" />
-              <div className="absolute inset-12 bg-blue-400/20 rounded-full blur-[50px]" />
               
-              {/* Logo with mix-blend-multiply directly on the image to make white transparent */}
               <Image 
                 src="/logo.png" 
                 alt="Bail-Bail Logo" 
                 width={500} 
                 height={500} 
-                className="relative z-10 object-contain w-full h-auto mix-blend-multiply"
+                className="relative z-10 object-contain w-full h-auto"
                 priority
               />
             </div>
