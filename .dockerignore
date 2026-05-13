@@ -1,0 +1,9 @@
+.git
+.next
+node_modules
+*.db
+*.db-journal
+dev.db
+private_uploads
+public/uploads
+test_video.js
