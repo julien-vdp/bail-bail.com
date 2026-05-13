@@ -255,9 +255,9 @@ export async function updateDocumentStatusAction(prevState: any, formData: FormD
         const info = await transporter.sendMail({
           from: '"Bail-Bail Admin" <admin@bail-bail.com>',
           to: doc.application.candidate.email,
-          subject: "Action requise : Document refusé - Bail-Bail",
-          text: `Bonjour ${doc.application.candidate.firstName},\n\nConcernant votre dossier pour le logement ${doc.application.property.title}, un document (${doc.type}) a été refusé.\n\nMotif : ${rejectionReason || 'Non spécifié'}\n\nMerci de bien vouloir fournir un nouveau document valide.\n\nCordialement, l'équipe Bail-Bail.`,
-          html: `<b>Bonjour ${doc.application.candidate.firstName},</b><br><br>Concernant votre dossier pour le logement ${doc.application.property.title}, un document (<b>${doc.type}</b>) a été <b>refusé</b>.<br><br><b>Motif du refus :</b> ${rejectionReason || 'Non spécifié'}<br><br>Merci de bien vouloir vous connecter à votre espace pour fournir un nouveau document valide.<br><br>Cordialement, l'équipe Bail-Bail.`,
+          subject: "Action requise urgemment : Document refusé - Bail-Bail",
+          text: `Bonjour ${doc.application.candidate.firstName},\n\nConcernant votre dossier pour le logement ${doc.application.property.title}, un document (${doc.type}) a été refusé.\n\nMotif : ${rejectionReason || 'Non spécifié'}\n\n⚠️ IMPORTANT : Vous devez vous connecter, modifier ce document et re-confirmer votre intérêt au plus vite. Sans action de votre part, votre place pour le créneau de visite sera libérée pour un autre candidat.\n\nCordialement, l'équipe Bail-Bail.`,
+          html: `<b>Bonjour ${doc.application.candidate.firstName},</b><br><br>Concernant votre dossier pour le logement ${doc.application.property.title}, un document (<b>${doc.type}</b>) a été <b>refusé</b>.<br><br><b>Motif du refus :</b> ${rejectionReason || 'Non spécifié'}<br><br><div style="background-color: #FEF2F2; padding: 15px; border-left: 4px solid #EF4444; margin: 20px 0;"><b>⚠️ IMPORTANT :</b> Vous devez vous connecter à votre espace, supprimer le document refusé et en fournir un nouveau au plus vite pour re-confirmer votre intérêt.<br><br>Sans action rapide de votre part, <b>votre créneau de visite sera libéré</b> au profit d'un autre candidat.</div><br>Cordialement, l'équipe Bail-Bail.`,
         });
 
         console.log("================ EMAILS SIMULÉS (REFUS DOCUMENT) ==================");

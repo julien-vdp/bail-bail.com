@@ -131,34 +131,73 @@ export default async function DossierPage({
               <div className="p-6 space-y-6">
                 {EXPECTED_DOCUMENTS.map(expectedDoc => {
                   const uploadedDoc = application.documents.find(d => d.type === expectedDoc.id);
+                  const isRejected = uploadedDoc?.status === "REJECTED";
+                  const isPending = uploadedDoc?.status === "PENDING";
+                  const isValidated = uploadedDoc?.status === "VALIDATED";
                   
                   return (
-                    <div key={expectedDoc.id} className={`p-5 border rounded-2xl space-y-4 transition-all duration-300 shadow-sm ${uploadedDoc ? 'bg-gradient-to-br from-green-50/50 to-white border-green-200' : 'bg-white border-slate-200 hover:border-primary/30 hover:shadow-md'}`}>
+                    <div key={expectedDoc.id} className={`p-5 border rounded-2xl space-y-4 transition-all duration-300 shadow-sm ${
+                      isRejected ? 'bg-gradient-to-br from-red-50/50 to-white border-red-300' :
+                      isValidated ? 'bg-gradient-to-br from-green-50/50 to-white border-green-200' :
+                      isPending ? 'bg-gradient-to-br from-blue-50/50 to-white border-blue-200' :
+                      'bg-white border-slate-200 hover:border-primary/30 hover:shadow-md'
+                    }`}>
                       <div className="flex items-center justify-between">
-                        <span className={`font-semibold flex items-center gap-3 ${uploadedDoc ? 'text-green-800' : 'text-slate-800'}`}>
-                          {uploadedDoc ? (
+                        <span className={`font-semibold flex items-center gap-3 ${
+                          isRejected ? 'text-red-800' : 
+                          isValidated ? 'text-green-800' : 
+                          isPending ? 'text-blue-800' : 
+                          'text-slate-800'
+                        }`}>
+                          {isRejected ? (
+                            <div className="bg-red-100 p-2 rounded-full shadow-sm"><ShieldCheck className="w-5 h-5 text-red-600" /></div>
+                          ) : isValidated ? (
                             <div className="bg-green-100 p-2 rounded-full shadow-sm"><CheckCircle2 className="w-5 h-5 text-green-600" /></div>
+                          ) : isPending ? (
+                            <div className="bg-blue-100 p-2 rounded-full shadow-sm"><Clock className="w-5 h-5 text-blue-600" /></div>
                           ) : (
                             <div className="bg-slate-100 p-2 rounded-full"><Clock className="w-5 h-5 text-slate-400" /></div>
                           )}
-                          {expectedDoc.label}
-                          {expectedDoc.optional && <span className="text-xs text-slate-500 bg-white/60 border border-slate-200 px-2 py-0.5 rounded-full font-medium ml-2">Optionnel</span>}
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              {expectedDoc.label}
+                              {expectedDoc.optional && <span className="text-[10px] text-slate-500 bg-white/60 border border-slate-200 px-2 py-0.5 rounded-full font-medium">Optionnel</span>}
+                            </div>
+                            {uploadedDoc && (
+                              <span className={`text-[10px] mt-1 uppercase font-bold w-fit px-2 py-0.5 rounded-full ${
+                                isValidated ? 'bg-green-100 text-green-700' : 
+                                isRejected ? 'bg-red-100 text-red-700' : 
+                                'bg-blue-100 text-blue-700'
+                              }`}>
+                                {isValidated ? "Validé" : isRejected ? "Refusé" : "En cours d'analyse"}
+                              </span>
+                            )}
+                          </div>
                         </span>
                       </div>
+
+                      {isRejected && uploadedDoc?.rejectionReason && (
+                        <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-sm font-medium mt-2">
+                          <p className="text-xs uppercase text-red-500 font-bold mb-1">Motif du refus</p>
+                          {uploadedDoc.rejectionReason}
+                        </div>
+                      )}
 
                       {!uploadedDoc ? (
                         <div className="pt-2">
                           <UploadForm applicationId={applicationId} documentType={expectedDoc.id} />
                         </div>
                       ) : (
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between text-sm bg-white/60 backdrop-blur-sm border border-green-100 p-3 rounded-xl mt-2 shadow-sm gap-3 sm:gap-0">
+                        <div className={`flex flex-col sm:flex-row sm:items-center justify-between text-sm bg-white/60 backdrop-blur-sm border p-3 rounded-xl mt-2 shadow-sm gap-3 sm:gap-0 ${
+                          isRejected ? 'border-red-100' : isValidated ? 'border-green-100' : 'border-blue-100'
+                        }`}>
                           <span className="flex items-center gap-2 text-slate-700 font-medium truncate sm:max-w-[200px]">
-                            <FileText className="w-5 h-5 text-green-600 drop-shadow-sm" />
+                            <FileText className={`w-5 h-5 drop-shadow-sm ${isRejected ? 'text-red-500' : isValidated ? 'text-green-600' : 'text-blue-500'}`} />
                             <span className="truncate">{uploadedDoc.fileName}</span>
                           </span>
                           <div className="flex items-center gap-2">
                             <DocumentViewerModal fileName={uploadedDoc.fileName} />
-                            {(application.status === "NOUVEAU" || application.status === "INCOMPLET") && (
+                            {(application.status === "NOUVEAU" || application.status === "INCOMPLET" || isRejected) && (
                               <DeleteDocumentButton documentId={uploadedDoc.id} applicationId={application.id} />
                             )}
                           </div>
