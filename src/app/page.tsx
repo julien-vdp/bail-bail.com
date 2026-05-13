@@ -3,8 +3,19 @@ import Link from "next/link";
 import { CodeSearchForm } from "@/components/CodeSearchForm";
 import { verifySession } from "@/lib/auth";
 
+const BACKGROUND_VIDEOS = [
+  "/video-accueil.mp4",
+  "/bg-video-1.mp4",
+  "/bg-video-2.mp4",
+  "/bg-video-3.mp4",
+  "/bg-video-4.mp4"
+];
+
 export default async function HomePage() {
   const session = await verifySession();
+  
+  // Sélection aléatoire d'une vidéo à chaque chargement
+  const randomVideo = BACKGROUND_VIDEOS[Math.floor(Math.random() * BACKGROUND_VIDEOS.length)];
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-between relative selection:bg-primary/20 text-white overflow-hidden">
@@ -12,13 +23,14 @@ export default async function HomePage() {
       {/* Background Animated Video */}
       <div className="fixed inset-0 w-full h-full -z-20 overflow-hidden bg-slate-900 pointer-events-none">
         <video 
+          key={randomVideo}
           autoPlay 
           loop 
           muted 
           playsInline 
           className="object-cover w-full h-full opacity-90"
         >
-          <source src="/video-accueil.mp4" type="video/mp4" />
+          <source src={randomVideo} type="video/mp4" />
         </video>
       </div>
       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-[1px] -z-10 pointer-events-none" />
