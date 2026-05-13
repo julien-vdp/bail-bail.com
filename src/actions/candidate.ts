@@ -5,6 +5,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth";
+import { sendEmail } from "@/lib/email";
 
 const SearchPropertySchema = z.object({
   code: z.string().min(1, "Veuillez saisir un code logement."),
@@ -122,9 +123,17 @@ export async function validateDossierAction(prevState: any, formData: FormData) 
 
   const { applicationId } = parsed.data;
 
-  await prisma.application.update({
+  const app = await prisma.application.update({
     where: { id: applicationId },
-    data: { status: "EN_COURS" }
+    data: { status: "COMPLET" },
+    include: {
+      candidate: true,
+      property: {
+        include: {
+          owner: true
+        }
+      }
+    }
   });
 
   await prisma.auditLog.create({
@@ -134,6 +143,24 @@ export async function validateDossierAction(prevState: any, formData: FormData) 
       details: "Dossier validé et soumis pour étude par le candidat."
     }
   });
+
+  if (app.property.owner?.email) {
+    await sendEmail({
+      to: app.property.owner.email,
+      subject: `Nouveau dossier complet : ${app.property.title}`,
+      html: `
+        <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+          <h2 style="color: #1e293b;">Nouveau dossier complet</h2>
+          <p>Bonjour <strong>${app.property.owner.name}</strong>,</p>
+          <p>Le candidat <strong>${app.candidate.firstName} ${app.candidate.lastName}</strong> a finalisé le dépôt de ses pièces justificatives pour votre annonce <strong>${app.property.title}</strong>.</p>
+          <p>Le statut de sa candidature est passé à <span style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">Complet</span>.</p>
+          <div style="text-align: center; margin-top: 30px;">
+            <a href="https://www.bail-bail.com/auth" style="padding: 12px 24px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Accéder à mon espace propriétaire</a>
+          </div>
+        </div>
+      `
+    });
+  }
 
   return { success: true };
 }

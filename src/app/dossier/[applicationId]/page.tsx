@@ -9,7 +9,7 @@ import { SubmitDossierForm } from "@/components/SubmitDossierForm";
 import { CandidateWarningScreen } from "@/components/CandidateWarningScreen";
 import { DeleteDocumentButton } from "@/components/DeleteDocumentButton";
 import Image from "next/image";
-
+import { DocumentViewerModal } from "@/components/DocumentViewerModal";
 export default async function DossierPage({
   params,
 }: {
@@ -133,16 +133,16 @@ export default async function DossierPage({
                   const uploadedDoc = application.documents.find(d => d.type === expectedDoc.id);
                   
                   return (
-                    <div key={expectedDoc.id} className="p-5 border border-slate-200 rounded-2xl space-y-4 bg-white hover:border-primary/30 transition-colors shadow-sm">
+                    <div key={expectedDoc.id} className={`p-5 border rounded-2xl space-y-4 transition-all duration-300 shadow-sm ${uploadedDoc ? 'bg-gradient-to-br from-green-50/50 to-white border-green-200' : 'bg-white border-slate-200 hover:border-primary/30 hover:shadow-md'}`}>
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-800 flex items-center gap-3">
+                        <span className={`font-semibold flex items-center gap-3 ${uploadedDoc ? 'text-green-800' : 'text-slate-800'}`}>
                           {uploadedDoc ? (
-                            <div className="bg-green-100 p-1.5 rounded-full"><CheckCircle2 className="w-5 h-5 text-green-600" /></div>
+                            <div className="bg-green-100 p-2 rounded-full shadow-sm"><CheckCircle2 className="w-5 h-5 text-green-600" /></div>
                           ) : (
-                            <div className="bg-slate-100 p-1.5 rounded-full"><Clock className="w-5 h-5 text-slate-400" /></div>
+                            <div className="bg-slate-100 p-2 rounded-full"><Clock className="w-5 h-5 text-slate-400" /></div>
                           )}
                           {expectedDoc.label}
-                          {expectedDoc.optional && <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full font-medium ml-2">Optionnel</span>}
+                          {expectedDoc.optional && <span className="text-xs text-slate-500 bg-white/60 border border-slate-200 px-2 py-0.5 rounded-full font-medium ml-2">Optionnel</span>}
                         </span>
                       </div>
 
@@ -151,13 +151,13 @@ export default async function DossierPage({
                           <UploadForm applicationId={applicationId} documentType={expectedDoc.id} />
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between text-sm bg-slate-50 border border-slate-100 p-3 rounded-xl mt-2">
-                          <span className="flex items-center gap-2 text-slate-600 font-medium truncate max-w-[200px]">
-                            <FileText className="w-4 h-4 text-primary" />
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between text-sm bg-white/60 backdrop-blur-sm border border-green-100 p-3 rounded-xl mt-2 shadow-sm gap-3 sm:gap-0">
+                          <span className="flex items-center gap-2 text-slate-700 font-medium truncate sm:max-w-[200px]">
+                            <FileText className="w-5 h-5 text-green-600 drop-shadow-sm" />
                             <span className="truncate">{uploadedDoc.fileName}</span>
                           </span>
                           <div className="flex items-center gap-2">
-                            <Link href={uploadedDoc.filePath} target="_blank" className={buttonVariants({ variant: "outline", size: "sm", className: "h-8 px-3 text-xs rounded-lg" })}>Ouvrir</Link>
+                            <DocumentViewerModal fileName={uploadedDoc.fileName} />
                             {(application.status === "NOUVEAU" || application.status === "INCOMPLET") && (
                               <DeleteDocumentButton documentId={uploadedDoc.id} applicationId={application.id} />
                             )}
