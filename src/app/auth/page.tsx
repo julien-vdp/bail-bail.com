@@ -11,11 +11,10 @@ export default async function AuthPage({
   const { redirect: redirectUrl } = await searchParams;
   
   if (session) {
-    if (redirectUrl) {
-      redirect(redirectUrl);
-    } else {
-      redirect(session.role === "OWNER" ? "/admin" : "/compte");
-    }
+    // Si l'utilisateur a une session et arrive sur /auth avec un redirectUrl,
+    // c'est probablement parce que la page de destination l'a rejeté (mauvais rôle).
+    // Pour éviter une boucle infinie, on le renvoie toujours vers son tableau de bord.
+    redirect(session.role === "OWNER" ? "/admin" : "/compte");
   }
 
   return (
