@@ -10,16 +10,16 @@ export default async function HomePage() {
     <div className="min-h-screen flex flex-col items-center justify-between relative selection:bg-primary/20 text-white overflow-hidden">
       
       {/* Background Animated Image (Ken Burns Effect) */}
-      <div className="fixed inset-0 w-full h-full -z-20 overflow-hidden bg-slate-900 pointer-events-none">
+      <div className="fixed inset-0 w-full h-full -z-20 overflow-hidden bg-slate-100 pointer-events-none">
         <Image 
-          src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop" 
-          alt="Modern Architecture" 
+          src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=2070&auto=format&fit=crop" 
+          alt="Appartement Lumineux" 
           fill
           priority
-          className="object-cover animate-ken-burns opacity-60"
+          className="object-cover animate-ken-burns"
         />
       </div>
-      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] -z-10 pointer-events-none" />
+      <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] -z-10 pointer-events-none" />
 
       {/* Header minimaliste */}
       <header className="w-full max-w-7xl mx-auto p-6 flex items-center justify-end relative z-10">
