@@ -12,8 +12,8 @@ export function CodeSearchForm() {
   return (
     <form action={formAction} className="w-full max-w-lg mx-auto space-y-6">
       <div className="space-y-4 flex flex-col">
-        <label htmlFor="code" className="text-sm font-semibold text-slate-700 flex items-center justify-center gap-2">
-          <KeyRound className="w-4 h-4 text-primary" />
+        <label htmlFor="code" className="text-sm font-semibold text-white/90 drop-shadow-md flex items-center justify-center gap-2">
+          <KeyRound className="w-4 h-4 text-white/90" />
           Entrez le code de votre annonce
         </label>
         
