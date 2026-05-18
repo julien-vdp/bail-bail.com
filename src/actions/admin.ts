@@ -24,7 +24,7 @@ export async function updateApplicationStatus(prevState: any, formData: FormData
   try {
     const oldApp = await prisma.application.findUnique({ 
       where: { id: applicationId },
-      include: { candidate: true, property: true }
+      include: { candidate: true, property: true, documents: true, visitSlots: true }
     });
     
     await prisma.application.update({
@@ -85,6 +85,86 @@ export async function updateApplicationStatus(prevState: any, formData: FormData
           }
         } catch (err) {
           console.error("Erreur lors de l'envoi de l'email d'acceptation :", err);
+        }
+      }
+
+      // Traitement complet si le dossier est REFUSE
+      if (status === "REFUSE") {
+        const fs = require('fs/promises');
+        const path = require('path');
+        
+        // 1. Purge Physique
+        if (oldApp.documents && oldApp.documents.length > 0) {
+          for (const doc of oldApp.documents) {
+            const safeFilename = `${doc.id}.enc`;
+            const filePath = path.join(process.cwd(), "private_uploads", "documents", applicationId, safeFilename);
+            try {
+              await fs.unlink(filePath);
+            } catch (e) {
+              console.warn("Fichier physique introuvable, suppression logique continue.");
+            }
+          }
+        }
+        
+        // 2. Purge Logique
+        await prisma.document.deleteMany({
+          where: { applicationId }
+        });
+        
+        // 3. Libération de créneau
+        if (oldApp.visitSlots && oldApp.visitSlots.length > 0) {
+          for (const slot of oldApp.visitSlots) {
+            await prisma.visitSlot.update({
+              where: { id: slot.id },
+              data: {
+                status: "AVAILABLE",
+                applications: { disconnect: { id: applicationId } }
+              }
+            });
+          }
+        }
+        
+        // 4. Notification Email
+        try {
+          const nodemailer = require("nodemailer");
+          let transporter;
+
+          if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+            transporter = nodemailer.createTransport({
+              host: process.env.SMTP_HOST,
+              port: Number(process.env.SMTP_PORT) || 587,
+              secure: process.env.SMTP_SECURE === "true",
+              auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASSWORD,
+              },
+            });
+          } else {
+            const testAccount = await nodemailer.createTestAccount();
+            transporter = nodemailer.createTransport({
+              host: "smtp.ethereal.email",
+              port: 587,
+              secure: false,
+              auth: { user: testAccount.user, pass: testAccount.pass },
+            });
+          }
+
+          const fromEmail = process.env.EMAIL_FROM || '"Bail-Bail Admin" <contact@bail-bail.com>';
+          const info = await transporter.sendMail({
+            from: fromEmail,
+            to: oldApp.candidate.email,
+            subject: "Mise à jour concernant votre dossier - Bail-Bail",
+            text: `Bonjour ${oldApp.candidate.firstName},\n\nNous vous informons que votre dossier pour le logement "${oldApp.property.title}" n'a pas été retenu par le propriétaire.\n\nConformément à nos engagements de confidentialité (RGPD), l'intégralité de vos pièces justificatives a été supprimée de nos serveurs.\n\nNous vous souhaitons une excellente recherche.\nL'équipe Bail-Bail.`,
+            html: `<b>Bonjour ${oldApp.candidate.firstName},</b><br><br>Nous vous informons que votre dossier pour le logement <b>${oldApp.property.title}</b> n'a pas été retenu par le propriétaire.<br><br>Conformément à nos engagements de confidentialité et à la réglementation RGPD, <b>l'intégralité de vos pièces justificatives a été définitivement supprimée de nos serveurs</b>.<br><br>Nous vous souhaitons de fructueuses recherches pour votre futur logement.<br><br>Cordialement,<br>L'équipe Bail-Bail.`,
+          });
+
+          if (!process.env.SMTP_HOST) {
+            console.log("================ EMAILS SIMULÉS (DOSSIER REFUSÉ & PURGÉ) ================");
+            console.log("Email envoyé ! Visualisez-le ici : %s", nodemailer.getTestMessageUrl(info));
+            console.log("=========================================================================");
+          }
+        } catch (err) {
+          console.error("Erreur lors de l'envoi de l'email de refus :", err);
         }
       }
     }

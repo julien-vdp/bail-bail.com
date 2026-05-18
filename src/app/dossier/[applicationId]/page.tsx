@@ -64,6 +64,34 @@ export default async function DossierPage({
     );
   }
 
+  if (application.status === "REFUSE") {
+    return (
+      <div className="min-h-[calc(100vh-80px)] bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-8 max-w-2xl w-full text-center shadow-xl border border-red-100 relative overflow-hidden">
+          <div className="absolute top-0 inset-x-0 h-2 bg-red-500"></div>
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <ShieldCheck className="w-10 h-10 text-red-600" />
+          </div>
+          <h1 className="text-3xl font-extrabold text-slate-900 mb-4">Dossier non retenu</h1>
+          <p className="text-slate-600 text-lg mb-8">
+            Nous sommes au regret de vous informer que le propriétaire n'a pas retenu votre candidature pour le logement <strong>{application.property.title}</strong>.
+          </p>
+          <div className="bg-red-50/50 border border-red-100 rounded-2xl p-6 mb-8 text-left">
+            <h3 className="font-bold text-red-800 flex items-center gap-2 mb-2">
+              <ShieldCheck className="w-5 h-5" /> Protection de vos données (RGPD)
+            </h3>
+            <p className="text-red-700 text-sm leading-relaxed">
+              Conformément à nos engagements de sécurité et à la réglementation européenne, <strong>l'intégralité des pièces justificatives que vous aviez fournies a été définitivement purgée et supprimée de nos serveurs.</strong> Aucune trace de vos documents (carte d'identité, revenus, etc.) n'a été conservée.
+            </p>
+          </div>
+          <Link href="/annonces" className={buttonVariants({ size: "lg", className: "w-full sm:w-auto" })}>
+            Rechercher un autre logement
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[calc(100vh-80px)] bg-slate-50">
       <div className="container max-w-5xl mx-auto p-4 py-8 md:py-12 space-y-8">

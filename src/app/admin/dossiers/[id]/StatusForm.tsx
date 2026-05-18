@@ -23,7 +23,15 @@ export function StatusForm({
   const [state, formAction, isPending] = useActionState(updateApplicationStatus, null);
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-4" onSubmit={(e) => {
+      const form = e.currentTarget;
+      const statusSelect = form.elements.namedItem('status') as HTMLSelectElement;
+      if (statusSelect.value === 'REFUSE') {
+        if (!window.confirm("Un mail va être envoyé au candidat disant que son dossier n'est pas accepté, le créneau va être libéré, et toutes ses pièces seront supprimées sans retour en arrière possible. Confirmer ?")) {
+          e.preventDefault();
+        }
+      }
+    }}>
       <input type="hidden" name="applicationId" value={applicationId} />
       
       <div className="flex flex-col gap-2">

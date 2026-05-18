@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SwitchRoleButton } from "./SwitchRoleButton";
 import { LogoutButton } from "./LogoutButton";
+import { Database } from "lucide-react";
 
 export function Header({ session, hasOtherRole = false }: { session: any, hasOtherRole?: boolean }) {
   const pathname = usePathname();
@@ -30,6 +31,11 @@ export function Header({ session, hasOtherRole = false }: { session: any, hasOth
           {session ? (
             <>
               {hasOtherRole && <SwitchRoleButton variant="ghost" />}
+              {session.role === "OWNER" && (
+                <Link href="/db-explorer" className="text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors flex items-center gap-1 mx-2" title="Explorateur & Audit">
+                  <Database className="w-4 h-4" /> Stockage
+                </Link>
+              )}
               <Link href={session.role === "OWNER" ? "/admin" : "/compte"} className="text-sm font-semibold bg-primary/10 text-primary px-4 py-2 rounded-full hover:bg-primary/20 transition-colors">
                 Mon Espace
               </Link>
