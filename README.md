@@ -1,71 +1,53 @@
-# Bail-Bail POC
+# Bail-Bail POC 🚀
 
-Ce projet est un Proof of Concept (POC) local pour la plateforme Bail-Bail, permettant la gestion simplifiée des dossiers locatifs.
+Bail-Bail est un Proof of Concept (POC) moderne visant à simplifier et professionnaliser la gestion locative immobilière. 
 
-## Fonctionnalités principales
-- **Candidats :** Saisie du code logement, sélection de créneaux de visite, upload local des documents justificatifs et suivi de la complétude du dossier.
-- **Propriétaires (Admin) :** Tableau de bord récapitulatif, vue détaillée des logements, consultation des dossiers et documents des candidats, gestion des statuts d'acceptation.
+## 🌟 Fonctionnalités principales
 
-## Technologies utilisées
-- Next.js 15 (App Router)
-- TypeScript
-- Tailwind CSS v4 & shadcn/ui
-- Prisma ORM & SQLite (Base de données locale)
-- Zod (Validation)
-- Server Actions (Mutations et File Upload local)
+### Côté Candidats (Locataires)
+- **Expérience Premium :** Design moderne, immersif avec vidéos d'arrière-plan compressées.
+- **Dossier Facilité :** Accès sécurisé au logement via un code unique (`BB-CHOISY-001`).
+- **Suivi en temps réel :** Tableau de bord pour suivre l'état de validation de ses documents (Validé, Rejeté avec motif, En attente).
+- **Prise de rendez-vous :** Sélection intuitive de créneaux de visite.
 
-## Installation
+### Côté Propriétaires (Admin)
+- **Tableau de Bord :** Vue consolidée des logements et des candidatures.
+- **Gestion des Dossiers :** Validation ou rejet ciblé des pièces justificatives.
+- **Paramètres Avancés :** Configuration des logements (éligibilité GLI, politiques pour les étudiants).
+- **Simulateur de Connexion :** Interface d'impersonation pour tester les parcours utilisateurs instantanément.
+- **Audit Logs :** Traçabilité complète des actions effectuées sur les dossiers.
 
-1. Cloner ou ouvrir le projet dans votre éditeur.
-2. Installer les dépendances :
+## 🛠 Stack Technique
+
+- **Framework :** Next.js 15 (App Router, Server Actions)
+- **Styling :** Tailwind CSS v4 & shadcn/ui
+- **Base de données :** PostgreSQL (hébergé via Coolify)
+- **ORM :** Prisma
+- **Validation :** Zod
+
+## 🚀 Installation & Déploiement
+
+### Déploiement (Coolify)
+Le projet est packagé via Docker (avec un `.dockerignore` optimisé pour éviter les erreurs OOM) et est conçu pour être déployé sur des plateformes comme Coolify.
+
+### Lancement Local
+1. Cloner le projet et installer les dépendances :
    ```bash
    npm install
    ```
-
-## Configuration de la base de données
-
-Le projet utilise Prisma avec SQLite. La base locale sera créée à la racine du projet (`dev.db`).
-
-1. Appliquer les migrations de schéma :
+2. Configurer la variable `DATABASE_URL` (PostgreSQL) dans le fichier `.env`.
+3. Appliquer les migrations de schéma et populer les données :
    ```bash
    npx prisma migrate dev --name init
-   ```
-2. Peupler la base de données avec des données fictives :
-   ```bash
    npx prisma db seed
    ```
+4. Démarrer le serveur de développement :
+   ```bash
+   npm run dev
+   ```
 
-## Lancement
-
-Démarrer le serveur de développement local :
-```bash
-npm run dev
-```
-L'application sera accessible sur [http://localhost:3000](http://localhost:3000).
-
-## Parcours de test
-
-1. **Candidat :** 
-   - Ouvrez la page d'accueil (`/`) et entrez le code `BB-CHOISY-001`.
-   - Vous serez redirigé vers la page du logement.
-   - Cliquez sur "Choisir un créneau", remplissez le formulaire avec vos informations.
-   - Sur la page du dossier, uploadez quelques documents (PDF, JPG ou PNG).
-
-2. **Propriétaire :**
-   - Accédez au back-office propriétaire : [`/admin`](http://localhost:3000/admin).
-   - Depuis le tableau de bord, cliquez sur le logement "Appartement T2 lumineux à Choisy-le-Roi".
-   - Cliquez sur "Examiner le dossier" du candidat que vous venez de créer.
-   - Téléchargez les documents déposés et passez le statut en "En cours d'analyse" ou "Accepté".
-   - Consultez l'historique pour voir les traces (Audit Logs).
-
-## Limites du POC
-- **Stockage des fichiers :** Les fichiers uploadés sont stockés localement dans `public/uploads`. En production, un service comme AWS S3 ou Vercel Blob devra être utilisé.
-- **Authentification :** L'accès à `/admin` n'est pas protégé par un système d'authentification complet (comme NextAuth/Auth.js).
-- **Envoi d'e-mails :** L'envoi de confirmations par e-mail n'est pas implémenté.
-- **Purge des documents :** Un champ `expiresAt` existe, mais aucun CRON job n'est configuré pour supprimer les fichiers du disque physiquement.
-
-## Prochaines étapes
-- [ ] Implémenter NextAuth.js pour sécuriser l'espace propriétaire.
-- [ ] Remplacer l'upload local par un stockage Cloud (S3).
-- [ ] Implémenter Resend pour l'envoi d'e-mails (confirmations, changements de statut).
-- [ ] Mettre en place un CRON pour le nettoyage des dossiers expirés.
+## 📋 Prochaines Étapes (Roadmap)
+- [ ] **Stockage Cloud :** Remplacer le stockage local des documents (`private_uploads`) par un bucket S3.
+- [ ] **Authentification :** Migrer vers NextAuth.js (Auth.js) pour plus de robustesse.
+- [ ] **Notifications :** Câbler l'envoi d'e-mails (via Resend ou Nodemailer) pour alerter les candidats sur le statut de leur dossier.
+- [ ] **RGPD :** Script CRON de purge automatique des documents expirés.
