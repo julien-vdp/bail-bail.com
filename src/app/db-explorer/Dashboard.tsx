@@ -10,8 +10,10 @@ const TABLES = [
   { id: "property", label: "Logements", icon: Home },
   { id: "user", label: "Utilisateurs", icon: Users },
   { id: "candidate", label: "Candidats", icon: Users },
+  { id: "application", label: "Dossiers", icon: FileText },
   { id: "visitSlot", label: "Créneaux", icon: Calendar },
   { id: "document", label: "Documents", icon: FileText },
+  { id: "auditLog", label: "Audit Logs", icon: Activity },
 ];
 export function Dashboard() {
   const [activeTable, setActiveTable] = useState(TABLES[0].id);

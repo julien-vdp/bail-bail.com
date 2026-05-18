@@ -39,6 +39,9 @@ function getPrismaModel(modelName: string): any {
     candidate: prisma.candidate,
     visitSlot: prisma.visitSlot,
     document: prisma.document,
+    application: prisma.application,
+    auditLog: prisma.auditLog,
+    propertyImage: prisma.propertyImage,
   };
   return models[modelName];
 }
