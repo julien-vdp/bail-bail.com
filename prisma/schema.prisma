@@ -106,6 +106,10 @@ model Document {
   rejectionReason String?
   expiresAt     DateTime?
   createdAt     DateTime    @default(now())
+
+  // Validation candidat
+  candidateApproved Boolean   @default(false)
+  candidateComment  String?
 }
 
 model AuditLog {

@@ -112,6 +112,64 @@ const ValidateDossierSchema = z.object({
   applicationId: z.string(),
 });
 
+const ApproveDocumentSchema = z.object({
+  documentId: z.string(),
+  approved: z.boolean(),
+  comment: z.string().optional(),
+});
+
+export async function approveDocumentAction(prevState: any, formData: FormData) {
+  const session = await verifySession();
+  if (!session || session.role !== "CANDIDATE") {
+    return { error: "Vous devez être connecté en tant que candidat." };
+  }
+
+  const parsed = ApproveDocumentSchema.safeParse({
+    documentId: formData.get("documentId"),
+    approved: formData.get("approved") === "true",
+    comment: formData.get("comment") || undefined,
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const { documentId, approved, comment } = parsed.data;
+
+  try {
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
+      include: { application: true }
+    });
+
+    if (!document || document.application.candidateId !== session.id) {
+      return { error: "Document introuvable ou non autorisé." };
+    }
+
+    await prisma.document.update({
+      where: { id: documentId },
+      data: {
+        candidateApproved: approved,
+        candidateComment: approved ? (comment || null) : null,
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        applicationId: document.applicationId,
+        action: approved ? "DOCUMENT_VALIDE_CANDIDAT" : "DOCUMENT_DEVALIDE_CANDIDAT",
+        details: `Le candidat a ${approved ? 'validé' : 'dé-validé'} le document ${document.type}${comment ? ` avec le commentaire : "${comment}"` : ""}.`
+      }
+    });
+
+    revalidatePath(`/dossier/${document.applicationId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la validation du document par le candidat:", error);
+    return { error: "Impossible de mettre à jour la validation du document." };
+  }
+}
+
 export async function validateDossierAction(prevState: any, formData: FormData) {
   const parsed = ValidateDossierSchema.safeParse({
     applicationId: formData.get("applicationId"),
@@ -122,6 +180,18 @@ export async function validateDossierAction(prevState: any, formData: FormData) 
   }
 
   const { applicationId } = parsed.data;
+
+  // Vérifier si des documents ne sont pas encore validés par le candidat
+  const unapprovedDocs = await prisma.document.count({
+    where: {
+      applicationId,
+      candidateApproved: false
+    }
+  });
+
+  if (unapprovedDocs > 0) {
+    return { error: "Vous devez valider toutes les pièces déposées (filigrane) avant de pouvoir soumettre le dossier." };
+  }
 
   const app = await prisma.application.update({
     where: { id: applicationId },

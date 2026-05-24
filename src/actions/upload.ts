@@ -9,6 +9,7 @@ import { addDays } from "date-fns";
 import { verifySession } from "@/lib/auth";
 import sharp from "sharp";
 import crypto from "crypto";
+import { watermarkPdf, watermarkImage } from "@/lib/watermark";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_MIME_TYPES = ["application/pdf", "image/jpeg", "image/png"];
@@ -38,6 +39,7 @@ export async function uploadDocumentAction(prevState: any, formData: FormData) {
   // Vérifier si le dossier existe
   const application = await prisma.application.findUnique({
     where: { id: applicationId },
+    include: { property: true }
   });
 
   if (!application) {
@@ -47,6 +49,15 @@ export async function uploadDocumentAction(prevState: any, formData: FormData) {
   try {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+
+    // Appliquer le filigrane indélébile selon le type de fichier
+    const watermarkText = `document déposé pour le dossier de location ${application.property.code}`;
+    let processedBuffer = buffer;
+    if (file.type === "application/pdf") {
+      processedBuffer = await watermarkPdf(buffer, watermarkText);
+    } else if (file.type.startsWith("image/")) {
+      processedBuffer = await watermarkImage(buffer, watermarkText);
+    }
 
     const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
     if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 64) {
@@ -61,7 +72,7 @@ export async function uploadDocumentAction(prevState: any, formData: FormData) {
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createCipheriv('aes-256-gcm', keyBuffer, iv);
     
-    const encrypted = Buffer.concat([cipher.update(buffer), cipher.final()]);
+    const encrypted = Buffer.concat([cipher.update(processedBuffer), cipher.final()]);
     const authTag = cipher.getAuthTag();
 
     // Final file: IV (16) + AuthTag (16) + EncryptedData
@@ -86,8 +97,9 @@ export async function uploadDocumentAction(prevState: any, formData: FormData) {
         filePath: dbFilePath,
         fileName: file.name,
         mimeType: file.type,
-        size: file.size,
+        size: processedBuffer.length,
         expiresAt: addDays(new Date(), 30), // Simulation d'expiration
+        candidateApproved: false, // Doit être validé par le candidat
       },
     });
 

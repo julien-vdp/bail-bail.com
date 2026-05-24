@@ -6,7 +6,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import Link from "next/link";
-import { ChevronLeft, FileText, User, Calendar, MapPin, Download, History } from "lucide-react";
+import { ChevronLeft, FileText, User, Calendar, MapPin, Download, History, MessageSquare } from "lucide-react";
 import { StatusForm } from "./StatusForm";
 import { DocumentViewerModal } from "@/components/admin/DocumentViewerModal";
 import { ConfirmVisitSlotForm } from "@/components/admin/ConfirmVisitSlotForm";
@@ -91,7 +91,7 @@ export default async function AdminApplicationPage({
                           <FileText className="h-5 w-5" />
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-medium text-sm">{doc.type}</p>
                             <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-full ${
                               doc.status === 'VALIDATED' ? 'bg-green-100 text-green-700' : 
@@ -99,8 +99,19 @@ export default async function AdminApplicationPage({
                             }`}>
                               {doc.status}
                             </span>
+                            <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-full ${
+                              doc.candidateApproved ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-amber-100 text-amber-700 border border-amber-200'
+                            }`}>
+                              Filigrane : {doc.candidateApproved ? "Validé" : "Non validé"}
+                            </span>
                           </div>
                           <p className="text-xs text-slate-500">{doc.fileName}</p>
+                          {doc.candidateComment && (
+                            <p className="text-xs text-slate-600 bg-slate-50 border border-slate-100 rounded px-2.5 py-1.5 mt-1 italic flex items-center gap-1.5 w-fit">
+                              <MessageSquare className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span>Commentaire candidat : "{doc.candidateComment}"</span>
+                            </p>
+                          )}
                         </div>
                       </div>
                       <DocumentViewerModal 

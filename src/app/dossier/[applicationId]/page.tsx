@@ -56,6 +56,9 @@ export default async function DossierPage({
   
   const progress = mandatoryDocs.length > 0 ? Math.round((uploadedMandatory / mandatoryDocs.length) * 100) : 100;
 
+  // Tous les documents téléversés doivent être validés (filigrane) par le candidat
+  const allUploadedDocsApproved = application.documents.every(d => d.candidateApproved);
+
   if (!application.hasAcceptedConditions) {
     return (
       <div className="container max-w-4xl mx-auto p-4 min-h-screen relative">
@@ -192,13 +195,20 @@ export default async function DossierPage({
                               {expectedDoc.optional && <span className="text-[10px] text-slate-500 bg-white/60 border border-slate-200 px-2 py-0.5 rounded-full font-medium">Optionnel</span>}
                             </div>
                             {uploadedDoc && (
-                              <span className={`text-[10px] mt-1 uppercase font-bold w-fit px-2 py-0.5 rounded-full ${
-                                isValidated ? 'bg-green-100 text-green-700' : 
-                                isRejected ? 'bg-red-100 text-red-700' : 
-                                'bg-blue-100 text-blue-700'
-                              }`}>
-                                {isValidated ? "Validé" : isRejected ? "Refusé" : "En cours d'analyse"}
-                              </span>
+                              <div className="flex flex-wrap gap-2 mt-1.5">
+                                <span className={`text-[10px] uppercase font-bold w-fit px-2.5 py-0.5 rounded-full ${
+                                  isValidated ? 'bg-green-100 text-green-700' : 
+                                  isRejected ? 'bg-red-100 text-red-700' : 
+                                  'bg-blue-100 text-blue-700'
+                                }`}>
+                                  Propriétaire : {isValidated ? "Validé" : isRejected ? "Refusé" : "En cours d'analyse"}
+                                </span>
+                                <span className={`text-[10px] uppercase font-bold w-fit px-2.5 py-0.5 rounded-full ${
+                                  uploadedDoc.candidateApproved ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-amber-100 text-amber-700 border border-amber-200 animate-pulse'
+                                }`}>
+                                  Filigrane : {uploadedDoc.candidateApproved ? "Validé par vous" : "À valider"}
+                                </span>
+                              </div>
                             )}
                           </div>
                         </span>
@@ -224,7 +234,15 @@ export default async function DossierPage({
                             <span className="truncate">{uploadedDoc.fileName}</span>
                           </span>
                           <div className="flex items-center gap-2">
-                            <DocumentViewerModal fileName={uploadedDoc.fileName} />
+                            <DocumentViewerModal 
+                              documentId={uploadedDoc.id}
+                              filePath={uploadedDoc.filePath}
+                              fileName={uploadedDoc.fileName}
+                              mimeType={uploadedDoc.mimeType}
+                              candidateApproved={uploadedDoc.candidateApproved}
+                              candidateComment={uploadedDoc.candidateComment}
+                              applicationStatus={application.status}
+                            />
                             {(application.status === "NOUVEAU" || application.status === "INCOMPLET" || isRejected) && (
                               <DeleteDocumentButton documentId={uploadedDoc.id} applicationId={application.id} />
                             )}
@@ -268,6 +286,7 @@ export default async function DossierPage({
                       applicationId={application.id} 
                       rent={application.property.rent} 
                       progress={progress} 
+                      allApproved={allUploadedDocsApproved}
                     />
                   </div>
                 )}
