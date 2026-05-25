@@ -242,6 +242,7 @@ export default async function DossierPage({
                               candidateApproved={uploadedDoc.candidateApproved}
                               candidateComment={uploadedDoc.candidateComment}
                               applicationStatus={application.status}
+                              documentType={expectedDoc.id}
                             />
                             {(application.status === "NOUVEAU" || application.status === "INCOMPLET" || isRejected) && (
                               <DeleteDocumentButton documentId={uploadedDoc.id} applicationId={application.id} />

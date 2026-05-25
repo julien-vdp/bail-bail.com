@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useTransition, useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Eye, FileText, CheckCircle, XCircle, Loader2, ShieldCheck, MessageSquare } from "lucide-react";
@@ -13,7 +13,8 @@ export function DocumentViewerModal({
   mimeType,
   candidateApproved,
   candidateComment,
-  applicationStatus
+  applicationStatus,
+  documentType
 }: { 
   documentId: string;
   filePath: string; 
@@ -22,6 +23,7 @@ export function DocumentViewerModal({
   candidateApproved: boolean;
   candidateComment: string | null;
   applicationStatus: string;
+  documentType: string;
 }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -29,6 +31,17 @@ export function DocumentViewerModal({
   const [agreed, setAgreed] = useState(candidateApproved);
   const [editMode, setEditMode] = useState(!candidateApproved);
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Auto-open modal if this document was just uploaded
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const justUploaded = sessionStorage.getItem("just_uploaded");
+      if (justUploaded === documentType) {
+        setOpen(true);
+        sessionStorage.removeItem("just_uploaded");
+      }
+    }
+  }, [documentType]);
 
   const handleApprove = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,17 +123,17 @@ export function DocumentViewerModal({
           </DialogTitle>
         </DialogHeader>
         
-        {/* Document Viewer (70% height area) */}
-        <div className="flex-1 bg-slate-100/50 p-4 overflow-hidden relative flex flex-col items-center justify-center">
-          <div className="w-full h-full max-w-4xl relative">
+        {/* Document Viewer (A4 format layout area) */}
+        <div className="flex-1 bg-slate-100/50 p-4 overflow-y-auto relative flex flex-col items-center justify-start">
+          <div className="w-full max-w-2xl aspect-[21/29.7] min-h-[65vh] md:min-h-[75vh] relative shadow-2xl rounded-xl overflow-hidden bg-white border border-slate-200">
             {isPdf ? (
               <iframe 
-                src={`${filePath}#toolbar=0`} 
-                className="w-full h-full rounded-xl border shadow-md bg-white"
+                src={`${filePath}#toolbar=0&view=FitH`} 
+                className="w-full h-full border-0"
                 title={fileName}
               />
             ) : isImage ? (
-              <div className="w-full h-full flex items-center justify-center overflow-auto rounded-xl border shadow-md bg-white p-4">
+              <div className="w-full h-full flex items-center justify-center p-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={filePath} 
@@ -129,7 +142,7 @@ export function DocumentViewerModal({
                 />
               </div>
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-slate-500 bg-white rounded-xl border shadow-md">
+              <div className="w-full h-full flex items-center justify-center text-slate-500">
                 Aperçu non disponible pour ce format.
               </div>
             )}
@@ -144,7 +157,7 @@ export function DocumentViewerModal({
               <h4 className="font-bold text-sm text-slate-800">Filigrane de sécurité Bail-Bail</h4>
             </div>
             <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-              Un filigrane indélébile contenant le logo de notre site et la référence de l'annonce a été apposé sur ce document. 
+              Un triple filigrane indélébile contenant le logo de notre site et la référence de l'annonce a été apposé en diagonale sur ce document. 
               Veuillez vérifier que le rendu vous convient, puis validez pour transmettre le dossier au propriétaire.
             </p>
 
