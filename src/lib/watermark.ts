@@ -1,12 +1,12 @@
-import { PDFDocument, rgb } from "pdf-lib";
+import { PDFDocument, rgb, degrees } from "pdf-lib";
 import sharp from "sharp";
 import path from "path";
 import fs from "fs/promises";
 
 /**
  * Applies a watermark on a PDF buffer:
- * - A semi-transparent logo in the center of every page.
- * - An annotation text below the logo and at the header/footer of every page.
+ * - A semi-transparent logo in the center of every page (larger).
+ * - Annotation text in red diagonal banners (-35 degrees) running across the page.
  */
 export async function watermarkPdf(pdfBuffer: Buffer, watermarkText: string): Promise<Buffer> {
   try {
@@ -22,9 +22,9 @@ export async function watermarkPdf(pdfBuffer: Buffer, watermarkText: string): Pr
       return pdfBuffer;
     }
 
-    // Resize the logo to a reasonable size using sharp
+    // Resize the logo to a larger size using sharp
     const transparentLogoBuffer = await sharp(logoBuffer)
-      .resize({ width: 200 })
+      .resize({ width: 280 }) // Increased from 200
       .png()
       .toBuffer();
 
@@ -35,35 +35,48 @@ export async function watermarkPdf(pdfBuffer: Buffer, watermarkText: string): Pr
       const { width, height } = page.getSize();
 
       // Logo coordinates (centered)
-      const logoWidth = 150;
+      const logoWidth = 220; // Increased from 150
       const logoHeight = (pngImage.height / pngImage.width) * logoWidth;
       const logoX = (width - logoWidth) / 2;
       const logoY = (height - logoHeight) / 2;
 
-      // Draw the logo with 15% opacity
+      // Draw the logo with 12% opacity (subtle and professional)
       page.drawImage(pngImage, {
         x: logoX,
         y: logoY,
         width: logoWidth,
         height: logoHeight,
-        opacity: 0.15,
+        opacity: 0.12,
       });
 
-      // Draw the watermark text below the logo
-      const fontSize = 12;
+      // Draw 2 diagonal text banners across the page
+      const fontSize = Math.max(14, Math.round(width * 0.038)); // Larger font size
+      
+      // Upper diagonal banner
       page.drawText(watermarkText, {
-        x: width / 2 - (watermarkText.length * 3.2), // Approximate horizontal centering
-        y: logoY - 25,
+        x: width * 0.12,
+        y: height * 0.70,
         size: fontSize,
         color: rgb(0.8, 0.2, 0.2), // soft red
-        opacity: 0.5,
+        opacity: 0.25,
+        rotate: degrees(-35), // Diagonal!
+      });
+
+      // Lower diagonal banner
+      page.drawText(watermarkText, {
+        x: width * 0.12,
+        y: height * 0.40,
+        size: fontSize,
+        color: rgb(0.8, 0.2, 0.2),
+        opacity: 0.25,
+        rotate: degrees(-35), // Diagonal!
       });
 
       // Draw tiny security headers and footers
       page.drawText(watermarkText, {
         x: 20,
         y: height - 20,
-        size: 8,
+        size: 7,
         color: rgb(0.5, 0.5, 0.5),
         opacity: 0.3,
       });
@@ -71,7 +84,7 @@ export async function watermarkPdf(pdfBuffer: Buffer, watermarkText: string): Pr
       page.drawText(watermarkText, {
         x: 20,
         y: 20,
-        size: 8,
+        size: 7,
         color: rgb(0.5, 0.5, 0.5),
         opacity: 0.3,
       });
@@ -88,8 +101,8 @@ export async function watermarkPdf(pdfBuffer: Buffer, watermarkText: string): Pr
 
 /**
  * Applies a watermark on an image buffer (JPEG/PNG):
- * - A semi-transparent logo in the center.
- * - An annotation text below the logo and at the corners.
+ * - A semi-transparent logo in the center (larger).
+ * - Annotation text in diagonal overlays (-35 degrees) running across the image.
  */
 export async function watermarkImage(imageBuffer: Buffer, watermarkText: string): Promise<Buffer> {
   try {
@@ -107,8 +120,8 @@ export async function watermarkImage(imageBuffer: Buffer, watermarkText: string)
     const width = metadata.width || 800;
     const height = metadata.height || 600;
 
-    // Logo size proportional to image width (25%)
-    const logoWidth = Math.round(width * 0.25);
+    // Logo size proportional to image width (35%)
+    const logoWidth = Math.round(width * 0.35);
     const transparentLogo = await sharp(logoBuffer)
       .resize({ width: logoWidth })
       .png()
@@ -116,13 +129,13 @@ export async function watermarkImage(imageBuffer: Buffer, watermarkText: string)
 
     const logoBase64 = transparentLogo.toString("base64");
 
-    // Create an SVG overlay covering the entire image
+    // Create an SVG overlay covering the entire image with diagonal text and centered logo
     const svgText = `
       <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
         <style>
           .watermark-text {
-            fill: rgba(220, 50, 50, 0.5);
-            font-size: ${Math.max(12, Math.round(width * 0.02))}px;
+            fill: rgba(220, 50, 50, 0.45);
+            font-size: ${Math.max(14, Math.round(width * 0.03))}px;
             font-family: sans-serif;
             font-weight: bold;
           }
@@ -133,15 +146,22 @@ export async function watermarkImage(imageBuffer: Buffer, watermarkText: string)
           }
         </style>
         
-        <!-- Logo in the center with 15% opacity -->
+        <!-- Logo in the center with 12% opacity -->
         <image href="data:image/png;base64,${logoBase64}" 
                x="${(width - logoWidth) / 2}" 
                y="${(height - (logoWidth * 0.55)) / 2}" 
                width="${logoWidth}" 
-               opacity="0.15" />
+               opacity="0.12" />
                
-        <!-- Center text below the logo -->
-        <text x="50%" y="${height / 2 + (logoWidth * 0.3) + 30}" text-anchor="middle" class="watermark-text">
+        <!-- Diagonal text banner 1 (Upper middle) -->
+        <text x="${width / 2}" y="${height * 0.38}" text-anchor="middle" 
+              transform="rotate(-35, ${width / 2}, ${height * 0.38})" class="watermark-text">
+          ${watermarkText}
+        </text>
+
+        <!-- Diagonal text banner 2 (Lower middle) -->
+        <text x="${width / 2}" y="${height * 0.62}" text-anchor="middle" 
+              transform="rotate(-35, ${width / 2}, ${height * 0.62})" class="watermark-text">
           ${watermarkText}
         </text>
         
