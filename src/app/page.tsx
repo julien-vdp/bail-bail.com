@@ -36,7 +36,7 @@ export default async function HomePage() {
       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-[1px] -z-10 pointer-events-none" />
 
       {/* Header minimaliste */}
-      <header className="w-full max-w-7xl mx-auto p-6 flex items-center justify-end relative z-10">
+      <header className="w-full max-w-7xl mx-auto p-6 flex items-center justify-end relative z-30">
         {session ? (
           <Link 
             href={session.role === "OWNER" ? "/admin" : "/compte"} 
