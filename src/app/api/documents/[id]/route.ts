@@ -27,7 +27,10 @@ export async function GET(
     where: { id: documentId },
     include: {
       application: {
-        include: { property: true }
+        include: {
+          property: true,
+          candidate: { select: { email: true } },
+        }
       }
     }
   });
@@ -38,7 +41,13 @@ export async function GET(
 
   // Authorization check
   let isAuthorized = false;
-  if (session.role === "CANDIDATE" && document.application.candidateId === session.id) {
+  if (
+    session.role === "CANDIDATE" &&
+    (
+      document.application.candidateId === session.id ||
+      document.application.candidate.email === session.email
+    )
+  ) {
     isAuthorized = true;
   } else if (session.role === "OWNER" && document.application.property.ownerId === session.id) {
     isAuthorized = true;
