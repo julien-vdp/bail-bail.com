@@ -40,7 +40,7 @@ export default async function VisitsPage({
     redirect(`/auth?redirect=/logement/${code}/visites`);
   }
 
-  const slotsByDate = property.visitSlots.reduce((acc, slot) => {
+  const slotsByDate = property.visitSlots.reduce((acc: Record<string, typeof property.visitSlots>, slot: typeof property.visitSlots[number]) => {
     const dateStr = slot.date.toISOString().split("T")[0];
     if (!acc[dateStr]) acc[dateStr] = [];
     acc[dateStr].push(slot);

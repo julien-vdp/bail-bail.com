@@ -43,45 +43,45 @@ export function AccountForm({ initialData, hasOtherRole = false }: { initialData
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-center">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Email (Lecture seule)</label>
-          <input type="email" value={initialData.email} disabled className="w-full border border-slate-200 bg-slate-50 text-slate-500 rounded-lg px-4 py-2" />
+          <input type="email" value={initialData.email} disabled className="w-full border border-slate-200 bg-slate-50 text-slate-500 rounded-lg px-4 py-2 text-center" />
         </div>
 
         {isOwner ? (
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Nom complet</label>
-            <input name="name" type="text" defaultValue={initialData.name} required className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none" />
+            <input name="name" type="text" defaultValue={initialData.name} required className="w-full border border-slate-300 rounded-lg px-4 py-2 text-center focus:ring-2 focus:ring-primary outline-none" />
           </div>
         ) : (
           <>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Prénom</label>
-              <input name="firstName" type="text" defaultValue={initialData.firstName} required className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none" />
+              <input name="firstName" type="text" defaultValue={initialData.firstName} required className="w-full border border-slate-300 rounded-lg px-4 py-2 text-center focus:ring-2 focus:ring-primary outline-none" />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Nom</label>
-              <input name="lastName" type="text" defaultValue={initialData.lastName} required className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none" />
+              <input name="lastName" type="text" defaultValue={initialData.lastName} required className="w-full border border-slate-300 rounded-lg px-4 py-2 text-center focus:ring-2 focus:ring-primary outline-none" />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
-              <input name="phone" type="tel" defaultValue={initialData.phone} required className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none" />
+              <input name="phone" type="tel" defaultValue={initialData.phone} required className="w-full border border-slate-300 rounded-lg px-4 py-2 text-center focus:ring-2 focus:ring-primary outline-none" />
             </div>
           </>
         )}
       </div>
 
-      <div className="border-t border-slate-200 pt-6 mt-6">
+      <div className="border-t border-slate-200 pt-6 mt-6 text-center">
         <h3 className="text-lg font-semibold text-slate-800 mb-4">Sécurité</h3>
-        <div className="max-w-md">
+        <div className="max-w-md mx-auto">
           <label className="block text-sm font-medium text-slate-700 mb-1">Nouveau mot de passe</label>
-          <input name="password" type="password" placeholder="Laisser vide pour ne pas modifier" minLength={6} className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none" />
+          <input name="password" type="password" placeholder="Laisser vide pour ne pas modifier" minLength={6} className="w-full border border-slate-300 rounded-lg px-4 py-2 text-center focus:ring-2 focus:ring-primary outline-none" />
         </div>
       </div>
 
-      <div className="border-t border-slate-200 pt-6 mt-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="border-t border-slate-200 pt-6 mt-6 flex flex-col items-center gap-4">
+        <div className="flex items-center justify-center gap-4">
           <LogoutButton variant="ghost" />
           {hasOtherRole && <SwitchRoleButton variant="ghost" />}
         </div>
@@ -89,7 +89,7 @@ export function AccountForm({ initialData, hasOtherRole = false }: { initialData
         <button
           type="submit"
           disabled={isPending}
-          className="bg-primary hover:bg-primary/90 text-white font-semibold py-2 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+          className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-2 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
         >
           {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
           Enregistrer les modifications

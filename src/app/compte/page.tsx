@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AccountForm } from "./AccountForm";
 import Link from "next/link";
 import { ChevronRight, Home } from "lucide-react";
+import { DeleteApplicationButton } from "./DeleteApplicationButton";
 
 export default async function AccountPage() {
   const res = await getAccountInfo();
@@ -62,7 +63,7 @@ export default async function AccountPage() {
         {/* Colonne de gauche : Formulaire */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <h2 className="text-lg font-bold text-slate-800 mb-4">Mes Informations</h2>
+            <h2 className="text-lg font-bold text-slate-800 mb-5 text-center">Mes Informations</h2>
             <AccountForm initialData={user} hasOtherRole={hasOtherRole} />
           </div>
         </div>
@@ -81,8 +82,8 @@ export default async function AccountPage() {
             ) : (
               <div className="grid gap-4">
                 {applications.map(app => (
-                  <Link href={`/dossier/${app.id}`} key={app.id} className="block group">
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-primary/40 transition-all flex items-center justify-between">
+                  <div key={app.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-primary/40 transition-all flex items-center justify-between gap-4">
+                    <Link href={`/dossier/${app.id}`} className="min-w-0 flex-1 group">
                       <div className="flex items-center gap-4">
                         <div className="bg-primary/10 p-3 rounded-xl text-primary shrink-0">
                           <Home className="w-6 h-6" />
@@ -99,13 +100,16 @@ export default async function AccountPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="shrink-0 pl-4">
+                    </Link>
+                    <div className="shrink-0 flex items-center gap-2">
+                      <Link href={`/dossier/${app.id}`} className="block group">
                         <div className="w-10 h-10 rounded-full bg-slate-50 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
                           <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
                         </div>
-                      </div>
+                      </Link>
+                      <DeleteApplicationButton applicationId={app.id} />
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             )}

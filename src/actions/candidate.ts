@@ -6,6 +6,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
+import fs from "fs/promises";
+import path from "path";
+import { getPrivateUploadsRoot } from "@/lib/storage";
 
 const SearchPropertySchema = z.object({
   code: z.string().min(1, "Veuillez saisir un code logement."),
@@ -318,6 +321,10 @@ const AcceptConditionsSchema = z.object({
   isStudent: z.boolean().default(false),
 });
 
+const DeleteApplicationSchema = z.object({
+  applicationId: z.string(),
+});
+
 export async function acceptConditionsAction(prevState: any, formData: FormData) {
   const session = await verifySession();
   if (!session || session.role !== "CANDIDATE") {
@@ -359,5 +366,72 @@ export async function acceptConditionsAction(prevState: any, formData: FormData)
 
   revalidatePath(`/dossier/${applicationId}`);
 
+  return { success: true };
+}
+
+export async function deleteApplicationAction(prevState: any, formData: FormData) {
+  const session = await verifySession();
+  if (!session || session.role !== "CANDIDATE") {
+    return { error: "Vous devez être connecté en tant que candidat." };
+  }
+
+  const parsed = DeleteApplicationSchema.safeParse({
+    applicationId: formData.get("applicationId"),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const { applicationId } = parsed.data;
+
+  const application = await prisma.application.findUnique({
+    where: { id: applicationId },
+    include: {
+      candidate: { select: { email: true } },
+      documents: true,
+      visitSlots: true,
+    }
+  });
+
+  if (
+    !application ||
+    (
+      application.candidateId !== session.id &&
+      application.candidate.email !== session.email
+    )
+  ) {
+    return { error: "Dossier introuvable ou non autorisé." };
+  }
+
+  if (application.status === "ACCEPTE") {
+    return { error: "Un dossier accepté ne peut pas être supprimé depuis cet espace." };
+  }
+
+  for (const document of application.documents) {
+    const filePath = path.join(getPrivateUploadsRoot(), "documents", applicationId, `${document.id}.enc`);
+    try {
+      await fs.unlink(filePath);
+    } catch {
+      // The database record is still removed below, even if the physical file was already gone.
+    }
+  }
+
+  if (application.visitSlots.length > 0) {
+    await prisma.application.update({
+      where: { id: applicationId },
+      data: {
+        visitSlots: {
+          disconnect: application.visitSlots.map((slot: { id: string }) => ({ id: slot.id }))
+        }
+      }
+    });
+  }
+
+  await prisma.application.delete({
+    where: { id: applicationId }
+  });
+
+  revalidatePath("/compte");
   return { success: true };
 }
