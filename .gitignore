@@ -45,5 +45,5 @@ next-env.d.ts
 # database
 *.db
 *.db-journal
-p r i v a t e _ u p l o a d s /  
-android-app/  
+private_uploads/
+android-app/
