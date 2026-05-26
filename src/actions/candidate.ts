@@ -63,6 +63,17 @@ export async function submitApplicationAction(prevState: any, formData: FormData
   const data = parsed.data;
   const candidateId = session.id;
 
+  const property = await prisma.property.findUnique({
+    where: { id: data.propertyId },
+    include: { visitSlots: { where: { id: { in: data.slotIds } } } }
+  });
+  if (!property || property.status !== "AVAILABLE") {
+    return { error: "Ce logement n'est plus disponible pour de nouvelles candidatures." };
+  }
+  if (property.visitSlots.length !== data.slotIds.length) {
+    return { error: "Un ou plusieurs créneaux sont invalides pour ce logement." };
+  }
+
   // Vérifier si une candidature existe déjà pour ce logement
   const existingApp = await prisma.application.findFirst({
     where: {
@@ -139,10 +150,20 @@ export async function approveDocumentAction(prevState: any, formData: FormData) 
   try {
     const document = await prisma.document.findUnique({
       where: { id: documentId },
-      include: { application: true }
+      include: {
+        application: {
+          include: { candidate: { select: { email: true } } }
+        }
+      }
     });
 
-    if (!document || document.application.candidateId !== session.id) {
+    if (
+      !document ||
+      (
+        document.application.candidateId !== session.id &&
+        document.application.candidate.email !== session.email
+      )
+    ) {
       return { error: "Document introuvable ou non autorisé." };
     }
 
@@ -171,6 +192,11 @@ export async function approveDocumentAction(prevState: any, formData: FormData) 
 }
 
 export async function validateDossierAction(prevState: any, formData: FormData) {
+  const session = await verifySession();
+  if (!session || session.role !== "CANDIDATE") {
+    return { error: "Vous devez être connecté en tant que candidat." };
+  }
+
   const parsed = ValidateDossierSchema.safeParse({
     applicationId: formData.get("applicationId"),
   });
@@ -180,6 +206,20 @@ export async function validateDossierAction(prevState: any, formData: FormData) 
   }
 
   const { applicationId } = parsed.data;
+
+  const application = await prisma.application.findUnique({
+    where: { id: applicationId },
+    include: { candidate: { select: { email: true } } }
+  });
+  if (
+    !application ||
+    (
+      application.candidateId !== session.id &&
+      application.candidate.email !== session.email
+    )
+  ) {
+    return { error: "Dossier introuvable ou non autorisé." };
+  }
 
   // Vérifier si des documents ne sont pas encore validés par le candidat
   const unapprovedDocs = await prisma.document.count({
@@ -279,6 +319,11 @@ const AcceptConditionsSchema = z.object({
 });
 
 export async function acceptConditionsAction(prevState: any, formData: FormData) {
+  const session = await verifySession();
+  if (!session || session.role !== "CANDIDATE") {
+    return { error: "Vous devez être connecté en tant que candidat." };
+  }
+
   const parsed = AcceptConditionsSchema.safeParse({
     applicationId: formData.get("applicationId"),
     isStudent: formData.get("isStudent") === "true",
@@ -289,6 +334,20 @@ export async function acceptConditionsAction(prevState: any, formData: FormData)
   }
 
   const { applicationId, isStudent } = parsed.data;
+
+  const application = await prisma.application.findUnique({
+    where: { id: applicationId },
+    include: { candidate: { select: { email: true } } }
+  });
+  if (
+    !application ||
+    (
+      application.candidateId !== session.id &&
+      application.candidate.email !== session.email
+    )
+  ) {
+    return { error: "Dossier introuvable ou non autorisé." };
+  }
 
   await prisma.application.update({
     where: { id: applicationId },

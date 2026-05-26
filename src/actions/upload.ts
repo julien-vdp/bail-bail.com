@@ -25,6 +25,11 @@ const UploadSchema = z.object({
 });
 
 export async function uploadDocumentAction(prevState: any, formData: FormData) {
+  const session = await verifySession();
+  if (!session || session.role !== "CANDIDATE") {
+    return { error: "Vous devez être connecté en tant que candidat." };
+  }
+
   const parsed = UploadSchema.safeParse({
     applicationId: formData.get("applicationId"),
     type: formData.get("type"),
@@ -40,11 +45,17 @@ export async function uploadDocumentAction(prevState: any, formData: FormData) {
   // Vérifier si le dossier existe
   const application = await prisma.application.findUnique({
     where: { id: applicationId },
-    include: { property: true }
+    include: {
+      property: true,
+      candidate: { select: { email: true } },
+    }
   });
 
   if (!application) {
     return { error: "Dossier introuvable." };
+  }
+  if (application.candidateId !== session.id && application.candidate.email !== session.email) {
+    return { error: "Dossier introuvable ou non autorisé." };
   }
 
   try {
@@ -256,21 +267,32 @@ export async function deletePropertyImageAction(imageUrl: string) {
 }
 
 export async function deleteDocumentAction(documentId: string, applicationId: string) {
+  const session = await verifySession();
+  if (!session || session.role !== "CANDIDATE") {
+    return { error: "Vous devez être connecté en tant que candidat." };
+  }
+
   try {
     const application = await prisma.application.findUnique({
       where: { id: applicationId },
-      include: { documents: true }
+      include: {
+        documents: true,
+        candidate: { select: { email: true } },
+      }
     });
 
     if (!application) {
       return { error: "Dossier introuvable." };
+    }
+    if (application.candidateId !== session.id && application.candidate.email !== session.email) {
+      return { error: "Dossier introuvable ou non autorisé." };
     }
 
     if (application.status === "SOUMIS" || application.status === "ACCEPTE" || application.status === "REFUSE") {
       return { error: "Vous ne pouvez plus modifier les documents d'un dossier soumis." };
     }
 
-    const document = application.documents.find(d => d.id === documentId);
+    const document = application.documents.find((d: { id: string }) => d.id === documentId);
     if (!document) {
       return { error: "Document introuvable." };
     }

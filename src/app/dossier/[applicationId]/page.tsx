@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, FileText, Clock, ShieldCheck, ChevronRight } from "lucide-react";
 import { UploadForm } from "./UploadForm";
@@ -10,12 +10,18 @@ import { CandidateWarningScreen } from "@/components/CandidateWarningScreen";
 import { DeleteDocumentButton } from "@/components/DeleteDocumentButton";
 import Image from "next/image";
 import { DocumentViewerModal } from "@/components/DocumentViewerModal";
+import { verifySession } from "@/lib/auth";
 export default async function DossierPage({
   params,
 }: {
   params: Promise<{ applicationId: string }>
 }) {
   const applicationId = (await params).applicationId;
+  const session = await verifySession();
+  if (!session || session.role !== "CANDIDATE") {
+    redirect(`/auth?redirect=/dossier/${applicationId}`);
+  }
+
   const application = await prisma.application.findUnique({
     where: { id: applicationId },
     include: {
@@ -26,6 +32,9 @@ export default async function DossierPage({
   });
 
   if (!application) {
+    notFound();
+  }
+  if (application.candidateId !== session.id && application.candidate.email !== session.email) {
     notFound();
   }
 
@@ -49,15 +58,15 @@ export default async function DossierPage({
   ];
 
   // Calcul progression
-  const mandatoryDocs = EXPECTED_DOCUMENTS.filter(d => !d.optional);
-  const uploadedMandatory = mandatoryDocs.filter(d => 
-    application.documents.some(doc => doc.type === d.id)
+  const mandatoryDocs = EXPECTED_DOCUMENTS.filter((d: { optional?: boolean }) => !d.optional);
+  const uploadedMandatory = mandatoryDocs.filter((d: { id: string }) => 
+    application.documents.some((doc: { type: string }) => doc.type === d.id)
   ).length;
   
   const progress = mandatoryDocs.length > 0 ? Math.round((uploadedMandatory / mandatoryDocs.length) * 100) : 100;
 
   // Tous les documents téléversés doivent être validés (filigrane) par le candidat
-  const allUploadedDocsApproved = application.documents.every(d => d.candidateApproved);
+  const allUploadedDocsApproved = application.documents.every((d: { candidateApproved: boolean }) => d.candidateApproved);
 
   if (!application.hasAcceptedConditions) {
     return (
@@ -161,7 +170,7 @@ export default async function DossierPage({
               
               <div className="p-6 space-y-6">
                 {EXPECTED_DOCUMENTS.map(expectedDoc => {
-                  const uploadedDoc = application.documents.find(d => d.type === expectedDoc.id);
+                  const uploadedDoc = application.documents.find((d: { type: string }) => d.type === expectedDoc.id);
                   const isRejected = uploadedDoc?.status === "REJECTED";
                   const isPending = uploadedDoc?.status === "PENDING";
                   const isValidated = uploadedDoc?.status === "VALIDATED";

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { getSimulatedUser } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
 
 const PropertySchema = z.object({
   title: z.string().min(5, "Le titre doit faire au moins 5 caractères"),
@@ -45,7 +45,10 @@ export async function createPropertyAction(prevState: any, formData: FormData) {
   }
 
   const code = "BB-" + generatePropertyCode();
-  const user = await getSimulatedUser();
+  const user = await verifySession();
+  if (!user || user.role !== "OWNER") {
+    return { error: "Non autorisé" };
+  }
 
   try {
     const property = await prisma.property.create({
@@ -67,6 +70,11 @@ export async function updatePropertyAction(prevState: any, formData: FormData) {
   const propertyId = formData.get("propertyId") as string;
   if (!propertyId) return { error: "ID du logement manquant" };
 
+  const user = await verifySession();
+  if (!user || user.role !== "OWNER") {
+    return { error: "Non autorisé" };
+  }
+
   const parsed = PropertySchema.safeParse({
     title: formData.get("title"),
     shortAddress: formData.get("shortAddress"),
@@ -84,6 +92,11 @@ export async function updatePropertyAction(prevState: any, formData: FormData) {
   }
 
   try {
+    const property = await prisma.property.findUnique({ where: { id: propertyId } });
+    if (!property || property.ownerId !== user.id) {
+      return { error: "Logement introuvable ou non autorisé" };
+    }
+
     await prisma.property.update({
       where: { id: propertyId },
       data: parsed.data,
@@ -122,7 +135,17 @@ export async function updatePropertyAction(prevState: any, formData: FormData) {
 }
 
 export async function deletePropertyAction(propertyId: string) {
+  const user = await verifySession();
+  if (!user || user.role !== "OWNER") {
+    return { error: "Non autorisé" };
+  }
+
   try {
+    const property = await prisma.property.findUnique({ where: { id: propertyId } });
+    if (!property || property.ownerId !== user.id) {
+      return { error: "Logement introuvable ou non autorisé" };
+    }
+
     // Soft delete en passant le statut à ARCHIVED ou delete réel
     await prisma.property.update({
       where: { id: propertyId },

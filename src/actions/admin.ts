@@ -3,6 +3,13 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { verifySession } from "@/lib/auth";
+
+async function requireOwnerSession() {
+  const session = await verifySession();
+  if (!session || session.role !== "OWNER") return null;
+  return session;
+}
 
 const UpdateStatusSchema = z.object({
   applicationId: z.string(),
@@ -10,6 +17,9 @@ const UpdateStatusSchema = z.object({
 });
 
 export async function updateApplicationStatus(prevState: any, formData: FormData) {
+  const session = await requireOwnerSession();
+  if (!session) return { error: "Non autorisé" };
+
   const parsed = UpdateStatusSchema.safeParse({
     applicationId: formData.get("applicationId"),
     status: formData.get("status"),
@@ -26,6 +36,9 @@ export async function updateApplicationStatus(prevState: any, formData: FormData
       where: { id: applicationId },
       include: { candidate: true, property: true, documents: true, visitSlots: true }
     });
+    if (!oldApp || oldApp.property.ownerId !== session.id) {
+      return { error: "Dossier introuvable ou non autorisé" };
+    }
     
     await prisma.application.update({
       where: { id: applicationId },
@@ -182,6 +195,9 @@ const ConfirmVisitSchema = z.object({
 });
 
 export async function confirmVisitSlotAction(prevState: any, formData: FormData) {
+  const session = await requireOwnerSession();
+  if (!session) return { error: "Non autorisé" };
+
   const parsed = ConfirmVisitSchema.safeParse({
     applicationId: formData.get("applicationId"),
     slotId: formData.get("slotId"),
@@ -207,6 +223,10 @@ export async function confirmVisitSlotAction(prevState: any, formData: FormData)
     return { error: "Données introuvables" };
   }
 
+  if (application.property.ownerId !== session.id || slot.propertyId !== application.propertyId) {
+    return { error: "Données introuvables ou non autorisées" };
+  }
+
   // Mettre le slot en BOOKED
   await prisma.visitSlot.update({
     where: { id: slotId },
@@ -226,7 +246,7 @@ export async function confirmVisitSlotAction(prevState: any, formData: FormData)
       where: { id: applicationId },
       data: {
         visitSlots: {
-          disconnect: otherSlots.map(s => ({ id: s.id }))
+          disconnect: otherSlots.map((s: { id: string }) => ({ id: s.id }))
         }
       }
     });
@@ -282,6 +302,9 @@ const UpdateDocumentStatusSchema = z.object({
 });
 
 export async function updateDocumentStatusAction(prevState: any, formData: FormData) {
+  const session = await requireOwnerSession();
+  if (!session) return { error: "Non autorisé" };
+
   const parsed = UpdateDocumentStatusSchema.safeParse({
     documentId: formData.get("documentId"),
     status: formData.get("status"),
@@ -305,6 +328,9 @@ export async function updateDocumentStatusAction(prevState: any, formData: FormD
     });
     
     if (!doc) return { error: "Document introuvable" };
+    if (doc.application.property.ownerId !== session.id) {
+      return { error: "Document introuvable ou non autorisé" };
+    }
 
     await prisma.document.update({
       where: { id: documentId },
