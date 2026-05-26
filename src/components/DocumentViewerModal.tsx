@@ -31,6 +31,7 @@ export function DocumentViewerModal({
   const [agreed, setAgreed] = useState(candidateApproved);
   const [editMode, setEditMode] = useState(!candidateApproved);
   const [errorMsg, setErrorMsg] = useState("");
+  const [viewerError, setViewerError] = useState(false);
 
   // Auto-open modal if this document was just uploaded
   useEffect(() => {
@@ -100,6 +101,7 @@ export function DocumentViewerModal({
         setComment(candidateComment || "");
         setEditMode(!candidateApproved);
         setErrorMsg("");
+        setViewerError(false);
       }
     }}>
       <DialogTrigger 
@@ -134,12 +136,23 @@ export function DocumentViewerModal({
               />
             ) : isImage ? (
               <div className="w-full h-full flex items-center justify-center p-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src={filePath} 
-                  alt={fileName} 
-                  className="max-w-full max-h-full object-contain"
-                />
+                {viewerError ? (
+                  <div className="max-w-md text-center px-6">
+                    <FileText className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                    <p className="text-sm font-semibold text-slate-700">Document momentanément indisponible</p>
+                    <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                      Le fichier existe dans votre dossier, mais sa prévisualisation n'a pas pu être chargée.
+                    </p>
+                  </div>
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img 
+                    src={filePath} 
+                    alt={fileName} 
+                    className="max-w-full max-h-full object-contain"
+                    onError={() => setViewerError(true)}
+                  />
+                )}
               </div>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-slate-500">

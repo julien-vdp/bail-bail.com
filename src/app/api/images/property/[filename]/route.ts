@@ -3,6 +3,7 @@ import { verifySession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import fs from "fs/promises";
 import path from "path";
+import { getPrivateUploadsRoot } from "@/lib/storage";
 
 export async function GET(
   request: Request,
@@ -63,7 +64,7 @@ export async function GET(
   }
 
   try {
-    const filepath = path.join(process.cwd(), "private_uploads", "properties", filename);
+    const filepath = path.join(getPrivateUploadsRoot(), "properties", filename);
     const fileBuffer = await fs.readFile(filepath);
     
     const response = new NextResponse(fileBuffer);

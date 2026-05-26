@@ -10,6 +10,7 @@ import { verifySession } from "@/lib/auth";
 import sharp from "sharp";
 import crypto from "crypto";
 import { watermarkPdf, watermarkImage } from "@/lib/watermark";
+import { getPrivateUploadsRoot } from "@/lib/storage";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_MIME_TYPES = ["application/pdf", "image/jpeg", "image/png"];
@@ -79,7 +80,7 @@ export async function uploadDocumentAction(prevState: any, formData: FormData) {
     const finalBuffer = Buffer.concat([iv, authTag, encrypted]);
 
     // Store in private outside web root
-    const uploadDir = path.join(process.cwd(), "private_uploads", "documents", applicationId);
+    const uploadDir = path.join(getPrivateUploadsRoot(), "documents", applicationId);
     await fs.mkdir(uploadDir, { recursive: true });
 
     const safeFilename = `${documentId}.enc`;
@@ -149,7 +150,7 @@ export async function uploadPropertyImageAction(propertyId: string, formData: Fo
   }
 
   try {
-    const uploadDir = path.join(process.cwd(), "private_uploads", "properties");
+    const uploadDir = path.join(getPrivateUploadsRoot(), "properties");
     await fs.mkdir(uploadDir, { recursive: true });
 
     // Load watermark if exists
@@ -234,7 +235,7 @@ export async function deletePropertyImageAction(imageUrl: string) {
 
     const filename = imageUrl.split("/").pop();
     if (filename) {
-      const filepath = path.join(process.cwd(), "private_uploads", "properties", filename);
+      const filepath = path.join(getPrivateUploadsRoot(), "properties", filename);
       try {
         await fs.unlink(filepath);
       } catch (e) {
@@ -276,7 +277,7 @@ export async function deleteDocumentAction(documentId: string, applicationId: st
 
     // Supression du fichier physique
     const safeFilename = `${documentId}.enc`;
-    const filePath = path.join(process.cwd(), "private_uploads", "documents", applicationId, safeFilename);
+    const filePath = path.join(getPrivateUploadsRoot(), "documents", applicationId, safeFilename);
     try {
       await fs.unlink(filePath);
     } catch (e) {

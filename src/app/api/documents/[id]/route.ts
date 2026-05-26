@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import fs from "fs/promises";
 import path from "path";
 import crypto from "crypto";
+import { getPrivateUploadsRoot } from "@/lib/storage";
 
 export async function GET(
   request: Request,
@@ -48,7 +49,7 @@ export async function GET(
   }
 
   // Read the encrypted file
-  const filepath = path.join(process.cwd(), "private_uploads", "documents", document.applicationId, `${documentId}.enc`);
+  const filepath = path.join(getPrivateUploadsRoot(), "documents", document.applicationId, `${documentId}.enc`);
   
   try {
     const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
