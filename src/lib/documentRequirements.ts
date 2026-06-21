@@ -21,6 +21,17 @@ export interface DocumentRequirementDefinition {
   helperText?: string;
 }
 
+function getFormattedPastMonth(offset: number): string {
+  const months = [
+    "janvier", "février", "mars", "avril", "mai", "juin",
+    "juillet", "août", "septembre", "octobre", "novembre", "décembre"
+  ];
+  const d = new Date();
+  d.setDate(1); // avoid month overflow issues
+  d.setMonth(d.getMonth() - offset);
+  return `${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 export function generateDocumentRequirements(
   property: any,
   candidate: any
@@ -147,14 +158,34 @@ export function generateDocumentRequirements(
 
     if (["CDI", "CDD", "PUBLIC_SERVANT"].includes(status)) {
       requirements.push({
-        key: "candidate_income_payslips",
-        label: "Trois dernières fiches de paie",
-        description: "Vos trois derniers bulletins de salaire.",
+        key: "candidate_income_payslip_1",
+        label: `Fiche de paie - ${getFormattedPastMonth(1)}`,
+        description: `Votre bulletin de salaire pour le mois de ${getFormattedPastMonth(1)}.`,
         category: "INCOME",
         isRequired: true,
         isOptional: false,
         allowedFileTypes,
-        maxFiles: 3,
+        maxFiles: 1,
+      });
+      requirements.push({
+        key: "candidate_income_payslip_2",
+        label: `Fiche de paie - ${getFormattedPastMonth(2)}`,
+        description: `Votre bulletin de salaire pour le mois de ${getFormattedPastMonth(2)}.`,
+        category: "INCOME",
+        isRequired: true,
+        isOptional: false,
+        allowedFileTypes,
+        maxFiles: 1,
+      });
+      requirements.push({
+        key: "candidate_income_payslip_3",
+        label: `Fiche de paie - ${getFormattedPastMonth(3)}`,
+        description: `Votre bulletin de salaire pour le mois de ${getFormattedPastMonth(3)}.`,
+        category: "INCOME",
+        isRequired: true,
+        isOptional: false,
+        allowedFileTypes,
+        maxFiles: 1,
       });
     } else if (status === "SELF_EMPLOYED") {
       requirements.push({
@@ -261,14 +292,34 @@ export function generateDocumentRequirements(
 
     if (property.requiresIncomeProof !== false) {
       requirements.push({
-        key: "guarantor_income",
-        label: "Justificatifs de revenus du garant",
-        description: "Trois dernières fiches de paie ou derniers justificatifs de ressources du garant.",
+        key: "guarantor_income_payslip_1",
+        label: `Fiche de paie garant - ${getFormattedPastMonth(1)}`,
+        description: `Bulletin de salaire du garant pour le mois de ${getFormattedPastMonth(1)}.`,
         category: "GUARANTOR_INCOME",
         isRequired: true,
         isOptional: false,
         allowedFileTypes,
-        maxFiles: 3,
+        maxFiles: 1,
+      });
+      requirements.push({
+        key: "guarantor_income_payslip_2",
+        label: `Fiche de paie garant - ${getFormattedPastMonth(2)}`,
+        description: `Bulletin de salaire du garant pour le mois de ${getFormattedPastMonth(2)}.`,
+        category: "GUARANTOR_INCOME",
+        isRequired: true,
+        isOptional: false,
+        allowedFileTypes,
+        maxFiles: 1,
+      });
+      requirements.push({
+        key: "guarantor_income_payslip_3",
+        label: `Fiche de paie garant - ${getFormattedPastMonth(3)}`,
+        description: `Bulletin de salaire du garant pour le mois de ${getFormattedPastMonth(3)}.`,
+        category: "GUARANTOR_INCOME",
+        isRequired: true,
+        isOptional: false,
+        allowedFileTypes,
+        maxFiles: 1,
       });
     }
 
