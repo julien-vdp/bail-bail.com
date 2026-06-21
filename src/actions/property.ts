@@ -102,6 +102,7 @@ export async function createPropertyAction(prevState: any, formData: FormData) {
     // Optionnel: ajouter des images sélectionnées lors de la création s'il y en a (ici on gère la création simple)
     redirect(`/admin/logements/${property.id}/edit`);
   } catch (error) {
+    console.error("[createPropertyAction Error]:", error);
     return { error: "Erreur lors de la création de l'annonce" };
   }
 }

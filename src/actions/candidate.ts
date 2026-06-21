@@ -455,6 +455,7 @@ const SaveProfileSchema = z.object({
   isColocation: z.boolean().default(false),
   roommatesCount: z.coerce.number().default(0),
 
+  isCdiMobility: z.boolean().optional().nullable(),
   roommatesJson: z.string().optional().nullable(),
   
   guarantorFirstName: z.string().optional().nullable(),
@@ -488,6 +489,7 @@ export async function saveCandidateProfileAction(prevState: any, formData: FormD
     isColocation: formData.get("isColocation") === "true",
     roommatesCount: formData.get("roommatesCount") ? Number(formData.get("roommatesCount")) : 0,
 
+    isCdiMobility: formData.get("isCdiMobility") === "true",
     roommatesJson: formData.get("roommatesJson"),
     
     guarantorFirstName: formData.get("guarantorFirstName"),
@@ -516,6 +518,7 @@ export async function saveCandidateProfileAction(prevState: any, formData: FormD
     isStudentOrApprentice,
     isApprentice,
     isColocation,
+    isCdiMobility,
     roommatesCount,
     roommatesJson,
     guarantorFirstName,
@@ -555,6 +558,7 @@ export async function saveCandidateProfileAction(prevState: any, formData: FormD
         isStudentOrApprentice,
         isApprentice,
         isColocation,
+        isCdiMobility,
         roommatesCount,
       }
     });

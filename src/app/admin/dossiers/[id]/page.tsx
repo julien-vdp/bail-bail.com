@@ -334,13 +334,13 @@ export default async function AdminApplicationPage({
               targetThreshold = 37;
             } else if (status === "SELF_EMPLOYED") {
               targetThreshold = 33;
-              if (application.candidate.selfEmployedYears < 2) {
+              if ((application.candidate.selfEmployedYears ?? 0) < 2) {
                 profileEligible = false;
                 eligibilityReason = "Indépendant depuis moins de 2 ans.";
               }
             } else if (status === "CDD") {
               targetThreshold = 25;
-              if (application.candidate.cddRemainingMonths < 12) {
+              if ((application.candidate.cddRemainingMonths ?? 0) < 12) {
                 profileEligible = false;
                 eligibilityReason = "CDD restant inférieur à 12 mois.";
               }
@@ -425,7 +425,7 @@ export default async function AdminApplicationPage({
                     <div className="flex justify-between pb-1.5 border-b border-slate-100">
                       <span className="text-slate-500 font-medium">Garant :</span>
                       <span className="font-semibold text-slate-800">
-                        {hasGuarantor ? `Oui (${application.candidate.guarantor.firstName} ${application.candidate.guarantor.lastName})` : "Non"}
+                        {hasGuarantor && application.candidate.guarantor ? `Oui (${application.candidate.guarantor.firstName} ${application.candidate.guarantor.lastName})` : "Non"}
                       </span>
                     </div>
 
