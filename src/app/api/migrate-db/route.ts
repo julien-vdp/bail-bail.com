@@ -4,6 +4,8 @@ import { promisify } from "util";
 
 const execPromise = promisify(exec);
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     console.log("Starting prisma db push on server...");
