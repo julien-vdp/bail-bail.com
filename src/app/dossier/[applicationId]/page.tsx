@@ -118,13 +118,31 @@ export default async function DossierPage({
     { 
       title: "Vos revenus", 
       icon: <Coins className="w-5 h-5 text-[#1463FF]" />, 
-      keys: ["candidate_income_payslips", "candidate_income_self_employed", "candidate_income_pension", "candidate_income_student", "candidate_income_other"] 
+      keys: [
+        "candidate_income_payslips",
+        "candidate_income_payslip_1",
+        "candidate_income_payslip_2",
+        "candidate_income_payslip_3",
+        "candidate_income_self_employed",
+        "candidate_income_pension",
+        "candidate_income_student",
+        "candidate_income_other"
+      ] 
     },
     { title: "Votre avis d'imposition", icon: <FileText className="w-5 h-5 text-[#1463FF]" />, keys: ["candidate_tax_notice"] },
     { 
       title: "Documents du garant", 
       icon: <Users className="w-5 h-5 text-[#1463FF]" />, 
-      keys: ["guarantor_identity", "guarantor_domicile", "guarantor_employment", "guarantor_income", "guarantor_tax_notice"] 
+      keys: [
+        "guarantor_identity",
+        "guarantor_domicile",
+        "guarantor_employment",
+        "guarantor_income",
+        "guarantor_income_payslip_1",
+        "guarantor_income_payslip_2",
+        "guarantor_income_payslip_3",
+        "guarantor_tax_notice"
+      ] 
     }
   ];
 
