@@ -45,17 +45,15 @@ export function VisitsForm({
                 const isSelected = selectedSlots.includes(slot.id);
                 return (
                   <div key={slot.id}>
-                    <input 
-                      type="checkbox" 
-                      id={`slot-${slot.id}`} 
-                      name="slotIds" 
-                      value={slot.id} 
-                      className="hidden" 
-                      checked={isSelected}
-                      onChange={() => toggleSlot(slot.id)}
-                    />
-                    <Label
-                      htmlFor={`slot-${slot.id}`}
+                    {isSelected && (
+                      <input 
+                        type="hidden" 
+                        name="slotIds" 
+                        value={slot.id} 
+                      />
+                    )}
+                    <div
+                      onClick={() => toggleSlot(slot.id)}
                       className={`flex flex-col items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${
                         isSelected 
                           ? "border-primary bg-primary/10 text-primary" 
@@ -66,7 +64,7 @@ export function VisitsForm({
                         {format(new Date(slot.date), "HH:mm")}
                       </span>
                       <span className="text-xs opacity-80">{slot.duration} min</span>
-                    </Label>
+                    </div>
                   </div>
                 );
               })}
