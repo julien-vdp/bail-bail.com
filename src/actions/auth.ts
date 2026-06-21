@@ -181,6 +181,13 @@ export async function updateAccount(formData: FormData) {
 // --- ANCIEN SYSTEME POUR COMPATIBILITE PENDANT LA TRANSITION ---
 
 export async function loginAsAction(id: string, name: string, role: "OWNER" | "CANDIDATE") {
+  const currentSession = await verifySession();
+  const isJulien = currentSession?.email === "julien.favaux@gmail.com" || currentSession?.originalEmail === "julien.favaux@gmail.com";
+
+  if (!isJulien) {
+    throw new Error("Non autorisé. Seul l'administrateur principal peut simuler d'autres comptes.");
+  }
+
   let email = "";
   if (role === "OWNER") {
     const user = await prisma.user.findUnique({ where: { id } });
@@ -190,7 +197,9 @@ export async function loginAsAction(id: string, name: string, role: "OWNER" | "C
     if (candidate) email = candidate.email;
   }
 
-  await createSession({ id, email, name, role });
+  const originalEmail = currentSession?.originalEmail || currentSession?.email;
+
+  await createSession({ id, email, name, role, originalEmail });
   
   if (role === "OWNER") {
     redirect("/admin");

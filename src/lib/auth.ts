@@ -6,6 +6,7 @@ export type SessionPayload = {
   email: string;
   name: string;
   role: "OWNER" | "CANDIDATE";
+  originalEmail?: string;
 };
 
 const SESSION_COOKIE_NAME = "bail_bail_session";
