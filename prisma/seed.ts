@@ -18,6 +18,26 @@ async function main() {
   });
 
   // 2. Create Properties
+  const paris = await prisma.property.upsert({
+    where: { code: 'BB-PARIS-008' },
+    update: {},
+    create: {
+      code: 'BB-PARIS-008',
+      title: "Appartement d'exception Paris 8ème",
+      shortAddress: "Paris 8ème, Île-de-France",
+      rent: 1350,
+      surface: 35,
+      status: 'AVAILABLE',
+      isEligibleGLI: true,
+      minSalaryRequired: 4050,
+      studentPolicy: 'REFUSED',
+      hasGli: true,
+      gliMonthlyIncomeThreshold: 4050,
+      acceptsGuarantor: false,
+      acceptsStudent: false,
+    },
+  });
+
   const choisy = await prisma.property.upsert({
     where: { code: 'BB-CHOISY-001' },
     update: {},
@@ -28,6 +48,13 @@ async function main() {
       rent: 890,
       surface: 42,
       status: 'AVAILABLE',
+      isEligibleGLI: true,
+      minSalaryRequired: 2700,
+      studentPolicy: 'ACCEPTED',
+      hasGli: true,
+      gliMonthlyIncomeThreshold: 2700,
+      acceptsGuarantor: true,
+      acceptsStudent: true,
     },
   });
 
@@ -37,10 +64,17 @@ async function main() {
     create: {
       code: 'BB-LYON-002',
       title: 'Studio meublé proche centre',
-      shortAddress: 'Lyon',
+      shortAddress: 'Lyon, Rhône',
       rent: 720,
       surface: 25,
       status: 'AVAILABLE',
+      isEligibleGLI: false,
+      minSalaryRequired: null,
+      studentPolicy: 'ACCEPTED',
+      hasGli: false,
+      gliMonthlyIncomeThreshold: null,
+      acceptsGuarantor: true,
+      acceptsStudent: true,
     },
   });
 
@@ -51,6 +85,15 @@ async function main() {
   for (const day of days) {
     const slotDate1 = setMinutes(setHours(addDays(today, day), 10), 0); // 10:00
     const slotDate2 = setMinutes(setHours(addDays(today, day), 14), 0); // 14:00
+
+    await prisma.visitSlot.create({
+      data: {
+        propertyId: paris.id,
+        date: slotDate1,
+        duration: 30,
+        status: 'AVAILABLE',
+      },
+    });
 
     await prisma.visitSlot.create({
       data: {

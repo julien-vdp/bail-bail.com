@@ -17,7 +17,7 @@ const ALLOWED_MIME_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 
 const UploadSchema = z.object({
   applicationId: z.string(),
-  type: z.enum(["ID_CARD", "INCOME", "EMPLOYMENT", "TAX", "RESIDENCE", "GUARANTOR"]),
+  type: z.string(),
   file: z.any()
     .refine((file) => file instanceof File, "Fichier manquant")
     .refine((file) => file.size <= MAX_FILE_SIZE, "Le fichier ne doit pas dépasser 10 Mo.")

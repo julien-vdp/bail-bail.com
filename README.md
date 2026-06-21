@@ -51,3 +51,38 @@ Le projet est packagé via Docker (avec un `.dockerignore` optimisé pour évite
 - [ ] **Authentification :** Migrer vers NextAuth.js (Auth.js) pour plus de robustesse.
 - [ ] **Notifications :** Câbler l'envoi d'e-mails (via Resend ou Nodemailer) pour alerter les candidats sur le statut de leur dossier.
 - [ ] **RGPD :** Script CRON de purge automatique des documents expirés.
+
+---
+
+## 📂 Gestion Dynamique et Conformité des Pièces Justificatives
+
+Le parcours candidat et la checklist documentaire de Bail-Bail sont désormais entièrement dynamiques et s'adaptent selon les réglages définis par le propriétaire sur l'annonce.
+
+### ⚙️ Fonctionnement des paramètres de dossier
+Le propriétaire peut paramétrer les éléments suivants depuis sa fiche logement :
+* **Garantie Loyers Impayés (GLI) :** Active un message informatif et compare les revenus du candidat au seuil exigé par l'assureur.
+* **Critères d'acceptation :** Possibilité de bloquer ou d'accepter les profils étudiants, et de permettre/refuser l'ajout de garants.
+* **Sélectivité des pièces :** Possibilité de rendre facultatifs ou d'exclure les justificatifs de domicile actuel, de situation professionnelle, de revenus ou l'avis d'imposition.
+* **Consignes personnalisées :** Texte d'aide rédigé par le propriétaire s'affichant sur l'écran d'upload.
+
+### 📐 Logique métier (`generateDocumentRequirements`)
+La fonction centrale `/src/lib/documentRequirements.ts` génère les pièces requises en fonction du couple **Annonce (Listing) x Candidat**. Elle s'assure de ne jamais demander plus de pièces que nécessaire :
+* Un étudiant ne se verra pas demander de justificatif d'emploi traditionnel, mais son certificat de scolarité.
+* Un retraité ne recevra pas de demande de situation professionnelle.
+* Un garant ne verra sa section de documents s'afficher que si les garants sont acceptés sur l'annonce et déclarés par le candidat.
+
+### ⚖️ Contraintes Légales (Loi Alur / Décret n° 2015-1437)
+> [!IMPORTANT]
+> La liste des documents exigés par Bail-Bail est strictement alignée avec le décret officiel listant les pièces justificatives autorisées en France. 
+> 
+> **Ne jamais ajouter de pièces interdites par la loi sans validation juridique préalable.**
+> Les pièces suivantes sont **formellement interdites** et ne doivent jamais être intégrées dans l'application :
+> - Carte vitale
+> - Relevé de compte bancaire
+> - Extrait de casier judiciaire
+> - Dossier médical
+> - Contrat de mariage ou jugement de divorce
+> - Photographie d'identité autre que celle de la pièce d'identité officielle
+> - Chèque de réservation
+> - RIB obligatoire avant acceptation formelle du dossier
+

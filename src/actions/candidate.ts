@@ -435,3 +435,99 @@ export async function deleteApplicationAction(prevState: any, formData: FormData
   revalidatePath("/compte");
   return { success: true };
 }
+
+const SaveProfileSchema = z.object({
+  applicationId: z.string(),
+  firstName: z.string().min(1, "Le prénom est requis"),
+  lastName: z.string().min(1, "Le nom est requis"),
+  email: z.string().email("L'adresse e-mail est invalide"),
+  phone: z.string().min(6, "Le numéro de téléphone doit comporter au moins 6 chiffres"),
+  employmentStatus: z.string().min(1, "Veuillez indiquer votre situation professionnelle"),
+  declaredMonthlyIncome: z.coerce.number().min(0, "Le revenu mensuel déclaré doit être supérieur ou égal à 0"),
+  hasGuarantor: z.boolean().default(false),
+});
+
+export async function saveCandidateProfileAction(prevState: any, formData: FormData) {
+  const session = await verifySession();
+  if (!session || session.role !== "CANDIDATE") {
+    return { error: "Vous devez être connecté en tant que candidat." };
+  }
+
+  const parsed = SaveProfileSchema.safeParse({
+    applicationId: formData.get("applicationId"),
+    firstName: formData.get("firstName"),
+    lastName: formData.get("lastName"),
+    email: formData.get("email"),
+    phone: formData.get("phone"),
+    employmentStatus: formData.get("employmentStatus"),
+    declaredMonthlyIncome: formData.get("declaredMonthlyIncome"),
+    hasGuarantor: formData.get("hasGuarantor") === "true",
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const {
+    applicationId,
+    firstName,
+    lastName,
+    email,
+    phone,
+    employmentStatus,
+    declaredMonthlyIncome,
+    hasGuarantor,
+  } = parsed.data;
+
+  try {
+    const application = await prisma.application.findUnique({
+      where: { id: applicationId },
+      include: { candidate: true, property: true }
+    });
+
+    if (
+      !application ||
+      (application.candidateId !== session.id && application.candidate.email !== session.email)
+    ) {
+      return { error: "Dossier introuvable ou non autorisé." };
+    }
+
+    // Update candidate details
+    await prisma.candidate.update({
+      where: { id: application.candidateId },
+      data: {
+        firstName,
+        lastName,
+        email,
+        phone,
+        employmentStatus,
+        declaredMonthlyIncome,
+        hasGuarantor,
+      }
+    });
+
+    // Sync isStudent on application
+    const isStudent = employmentStatus === "STUDENT";
+    await prisma.application.update({
+      where: { id: applicationId },
+      data: {
+        isStudent,
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        applicationId,
+        action: "PROFIL_COMPLETE",
+        details: `Profil candidat mis à jour : ${employmentStatus}, ${declaredMonthlyIncome}€/mois, garant: ${hasGuarantor ? 'Oui' : 'Non'}.`
+      }
+    });
+
+    revalidatePath(`/dossier/${applicationId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error saving candidate profile:", error);
+    return { error: "Impossible d'enregistrer les informations de votre profil." };
+  }
+}
+

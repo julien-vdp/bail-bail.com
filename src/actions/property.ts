@@ -16,6 +16,16 @@ const PropertySchema = z.object({
   isEligibleGLI: z.boolean().default(false),
   minSalaryRequired: z.coerce.number().optional().nullable(),
   studentPolicy: z.enum(["ACCEPTED", "REFUSED", "ONLY_STUDENTS"]).default("ACCEPTED"),
+  
+  hasGli: z.boolean().default(false),
+  gliMonthlyIncomeThreshold: z.coerce.number().optional().nullable(),
+  acceptsGuarantor: z.boolean().default(true),
+  acceptsStudent: z.boolean().default(true),
+  requiresTaxNotice: z.boolean().default(true),
+  requiresCurrentAddressProof: z.boolean().default(true),
+  requiresEmploymentProof: z.boolean().default(true),
+  requiresIncomeProof: z.boolean().default(true),
+  customInstructions: z.string().optional().nullable(),
 });
 
 function generatePropertyCode() {
@@ -38,6 +48,16 @@ export async function createPropertyAction(prevState: any, formData: FormData) {
     isEligibleGLI: formData.get("isEligibleGLI") === "on" || formData.get("isEligibleGLI") === "true",
     minSalaryRequired: formData.get("minSalaryRequired") ? formData.get("minSalaryRequired") : null,
     studentPolicy: formData.get("studentPolicy") || "ACCEPTED",
+    
+    hasGli: formData.get("hasGli") === "on" || formData.get("hasGli") === "true",
+    gliMonthlyIncomeThreshold: formData.get("gliMonthlyIncomeThreshold") ? formData.get("gliMonthlyIncomeThreshold") : null,
+    acceptsGuarantor: formData.get("acceptsGuarantor") === "on" || formData.get("acceptsGuarantor") === "true",
+    acceptsStudent: formData.get("acceptsStudent") === "on" || formData.get("acceptsStudent") === "true",
+    requiresTaxNotice: formData.get("requiresTaxNotice") === "on" || formData.get("requiresTaxNotice") === "true",
+    requiresCurrentAddressProof: formData.get("requiresCurrentAddressProof") === "on" || formData.get("requiresCurrentAddressProof") === "true",
+    requiresEmploymentProof: formData.get("requiresEmploymentProof") === "on" || formData.get("requiresEmploymentProof") === "true",
+    requiresIncomeProof: formData.get("requiresIncomeProof") === "on" || formData.get("requiresIncomeProof") === "true",
+    customInstructions: formData.get("customInstructions") || null,
   });
 
   if (!parsed.success) {
@@ -85,6 +105,16 @@ export async function updatePropertyAction(prevState: any, formData: FormData) {
     isEligibleGLI: formData.get("isEligibleGLI") === "on" || formData.get("isEligibleGLI") === "true",
     minSalaryRequired: formData.get("minSalaryRequired") ? formData.get("minSalaryRequired") : null,
     studentPolicy: formData.get("studentPolicy") || "ACCEPTED",
+    
+    hasGli: formData.get("hasGli") === "on" || formData.get("hasGli") === "true",
+    gliMonthlyIncomeThreshold: formData.get("gliMonthlyIncomeThreshold") ? formData.get("gliMonthlyIncomeThreshold") : null,
+    acceptsGuarantor: formData.get("acceptsGuarantor") === "on" || formData.get("acceptsGuarantor") === "true",
+    acceptsStudent: formData.get("acceptsStudent") === "on" || formData.get("acceptsStudent") === "true",
+    requiresTaxNotice: formData.get("requiresTaxNotice") === "on" || formData.get("requiresTaxNotice") === "true",
+    requiresCurrentAddressProof: formData.get("requiresCurrentAddressProof") === "on" || formData.get("requiresCurrentAddressProof") === "true",
+    requiresEmploymentProof: formData.get("requiresEmploymentProof") === "on" || formData.get("requiresEmploymentProof") === "true",
+    requiresIncomeProof: formData.get("requiresIncomeProof") === "on" || formData.get("requiresIncomeProof") === "true",
+    customInstructions: formData.get("customInstructions") || null,
   });
 
   if (!parsed.success) {

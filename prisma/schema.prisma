@@ -31,6 +31,18 @@ model Property {
   isEligibleGLI      Boolean  @default(false)
   minSalaryRequired  Float?
   studentPolicy      String   @default("ACCEPTED") // ACCEPTED, REFUSED, ONLY_STUDENTS
+  
+  // Nouveaux paramètres dossier dynamique
+  hasGli                      Boolean  @default(false)
+  gliMonthlyIncomeThreshold  Float?
+  acceptsGuarantor           Boolean  @default(true)
+  acceptsStudent             Boolean  @default(true)
+  requiresTaxNotice          Boolean  @default(true)
+  requiresCurrentAddressProof Boolean  @default(true)
+  requiresEmploymentProof    Boolean  @default(true)
+  requiresIncomeProof        Boolean  @default(true)
+  customInstructions         String?
+  
   ownerId            String?
   owner        User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
@@ -70,6 +82,12 @@ model Candidate {
   email        String   @unique
   phone        String
   passwordHash String?
+  
+  // Profil professionnel et ressources
+  employmentStatus      String? // CDI, CDD, PUBLIC_SERVANT, SELF_EMPLOYED, RETIRED, STUDENT, UNEMPLOYED, OTHER
+  hasGuarantor          Boolean  @default(false)
+  declaredMonthlyIncome Float?
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

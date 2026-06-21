@@ -80,9 +80,10 @@ export function CandidateWarningScreen({
   const [state, formAction, isPending] = useActionState(acceptConditionsAction, null);
   const [isStudentCheckbox, setIsStudentCheckbox] = useState(false);
   
-  const requiredIncome = property.minSalaryRequired || (property.rent * 3);
+  const hasGli = property.hasGli || property.isEligibleGLI;
+  const requiredIncome = property.gliMonthlyIncomeThreshold || property.minSalaryRequired || (property.rent * 3);
   const isOnlyStudents = property.studentPolicy === "ONLY_STUDENTS";
-  const isRefusedStudents = property.studentPolicy === "REFUSED";
+  const isRefusedStudents = property.studentPolicy === "REFUSED" || property.acceptsStudent === false;
 
   const isStudentToSubmit = isOnlyStudents ? true : isRefusedStudents ? false : isStudentCheckbox;
 
@@ -105,7 +106,7 @@ export function CandidateWarningScreen({
     pedagogyText = "La plupart des assureurs demandent que les garants justifient de revenus mensuels d'au moins trois fois le montant du loyer charges comprises.";
     buttonText = "Je confirme être étudiant(e)";
     secondaryButtonText = "Retour aux annonces";
-  } else if (property.isEligibleGLI) {
+  } else if (hasGli) {
     infoBoxText = "Ce logement est couvert par une Garantie Loyers Impayés (GLI). Les conditions de revenus sont définies par l'assureur et doivent être respectées pour qu'un dossier puisse être accepté.";
   } else {
     title = "Conditions de revenus estimées";
