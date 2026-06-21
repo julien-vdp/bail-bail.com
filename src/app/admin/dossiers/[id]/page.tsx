@@ -61,6 +61,7 @@ export default async function AdminApplicationPage({
   const getStatusLabelFr = (status: string) => {
     if (status === "STUDENT") return "Étudiant(e)";
     if (status === "CDI") return "Salarié CDI";
+    if (status === "CDI_MOBILITY") return "Salarié CDI (mobilité)";
     if (status === "CDD") return "Salarié CDD";
     if (status === "PUBLIC_SERVANT") return "Fonctionnaire";
     if (status === "SELF_EMPLOYED") return "Indépendant / Freelance";
@@ -72,7 +73,22 @@ export default async function AdminApplicationPage({
   const isAnySlotBooked = application.visitSlots.some(s => s.status === "BOOKED");
 
   // Logic to compute dynamic requirements, completeness, and coherence metrics
-  const expectedDocs = application.documentRequirements;
+  // Sync document requirements on page load to ensure they match the current property settings and candidate situation
+  const { syncDocumentRequirements } = await import("@/lib/documentRequirements");
+  await syncDocumentRequirements(applicationId, application.property, application.candidate);
+
+  const reloadedApp = await prisma.application.findUnique({
+    where: { id: applicationId },
+    include: {
+      documentRequirements: {
+        include: {
+          documents: true,
+        }
+      }
+    }
+  });
+
+  const expectedDocs = reloadedApp?.documentRequirements || [];
   
   const mandatoryDocs = expectedDocs.filter(d => d.required);
   const uploadedMandatoryCount = mandatoryDocs.filter(d => 

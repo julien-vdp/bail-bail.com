@@ -62,7 +62,7 @@ export function generateDocumentRequirements(
     const status = candidate.employmentStatus || "OTHER";
     
     // CDI HORS PÉRIODE D'ESSAI ou CDI EN MOBILITÉ
-    if (status === "CDI") {
+    if (status === "CDI" || status === "CDI_MOBILITY") {
       const isProbation = candidate.isInProbationPeriod === true;
       requirements.push({
         key: "candidate_employment",
@@ -389,7 +389,7 @@ export function generateDocumentRequirements(
 
       // Situation pro et revenus colocataire
       const rstatus = roommate.employmentStatus || "OTHER";
-      if (["CDI", "CDD", "PUBLIC_SERVANT"].includes(rstatus)) {
+      if (["CDI", "CDI_MOBILITY", "CDD", "PUBLIC_SERVANT"].includes(rstatus)) {
         requirements.push({
           key: `${prefix}_employment`,
           label: `Justificatif professionnel - ${roommate.firstName}`,
@@ -525,7 +525,7 @@ export function generateDocumentRequirements(
     // Revenus garant
     if (property.requiresIncomeProof !== false) {
       const gstatus = guarantor.employmentStatus || "OTHER";
-      if (["CDI", "CDD", "PUBLIC_SERVANT"].includes(gstatus)) {
+      if (["CDI", "CDI_MOBILITY", "CDD", "PUBLIC_SERVANT"].includes(gstatus)) {
         for (let i = 1; i <= 3; i++) {
           requirements.push({
             key: `guarantor_income_payslip_${i}`,
@@ -568,4 +568,97 @@ export function generateDocumentRequirements(
   }
 
   return requirements;
+}
+
+export async function syncDocumentRequirements(
+  applicationId: string,
+  property: any,
+  candidate: any
+) {
+  const { prisma } = await import("@/lib/prisma");
+
+  const reqDefs = generateDocumentRequirements(property, candidate);
+  const currentReqKeys = reqDefs.map(r => r.key);
+
+  // Rendre null requirementId pour les documents dont l'exigence va disparaître
+  await prisma.document.updateMany({
+    where: {
+      applicationId,
+      requirement: {
+        key: { notIn: currentReqKeys }
+      }
+    },
+    data: { requirementId: null }
+  });
+
+  // Supprimer les exigences devenues obsolètes
+  await prisma.documentRequirement.deleteMany({
+    where: {
+      applicationId,
+      key: { notIn: currentReqKeys }
+    }
+  });
+
+  // Insérer / Mettre à jour les exigences actuelles
+  for (const def of reqDefs) {
+    const existing = await prisma.documentRequirement.findFirst({
+      where: { applicationId, key: def.key }
+    });
+
+    if (existing) {
+      await prisma.documentRequirement.update({
+        where: { id: existing.id },
+        data: {
+          label: def.label,
+          description: def.description,
+          category: def.category,
+          required: def.required,
+          recommended: def.recommended,
+          appliesTo: def.appliesTo,
+          maxFiles: def.maxFiles,
+        }
+      });
+    } else {
+      await prisma.documentRequirement.create({
+        data: {
+          applicationId,
+          key: def.key,
+          label: def.label,
+          description: def.description,
+          category: def.category,
+          required: def.required,
+          recommended: def.recommended,
+          appliesTo: def.appliesTo,
+          maxFiles: def.maxFiles,
+          status: "PENDING"
+        }
+      });
+    }
+  }
+
+  // Réassocier les documents existants par rapport aux nouvelles exigences en DB
+  const allRequirements = await prisma.documentRequirement.findMany({
+    where: { applicationId }
+  });
+  const allDocuments = await prisma.document.findMany({
+    where: { applicationId }
+  });
+
+  for (const doc of allDocuments) {
+    const req = allRequirements.find(r => {
+      if (r.key === "candidate_identity" && doc.type === "IDENTITY") return true;
+      if (r.key === "candidate_domicile" && doc.type === "DOMICILE") return true;
+      if (r.key.includes("income") && doc.type === "INCOME") return true;
+      if (r.key.includes("employment") && doc.type === "EMPLOYMENT") return true;
+      if (r.key.includes("tax") && doc.type === "TAX") return true;
+      if (r.key.includes("guarantor") && doc.type === "GUARANTOR") return true;
+      return false;
+    });
+    if (req && doc.requirementId !== req.id) {
+      await prisma.document.update({
+        where: { id: doc.id },
+        data: { requirementId: req.id }
+      });
+    }
+  }
 }

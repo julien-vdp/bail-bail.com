@@ -13,10 +13,27 @@ export async function GET() {
     console.log("Starting prisma db seed on server...");
     const seedResult = await execPromise("npx prisma db seed");
     console.log("Prisma db seed stdout:", seedResult.stdout);
+
+    console.log("Updating legacy properties in database...");
+    const { prisma } = await import("@/lib/prisma");
+    const updateResult = await prisma.property.updateMany({
+      data: {
+        requiresCurrentAddressProof: true,
+        requiresEmploymentProof: true,
+        requiresIncomeProof: true,
+        requiresTaxNotice: true,
+        acceptsGuarantor: true,
+        acceptsStudent: true,
+        acceptsStudents: true,
+        acceptsGuarantors: true,
+      }
+    });
+    console.log("Update legacy properties result:", updateResult);
     
     return NextResponse.json({
       success: true,
-      message: "Database schema pushed and seeded successfully!",
+      message: "Database schema pushed, seeded and legacy properties updated successfully!",
+      updateResult,
       push: {
         stdout: pushResult.stdout,
         stderr: pushResult.stderr

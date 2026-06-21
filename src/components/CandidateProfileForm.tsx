@@ -87,12 +87,12 @@ export function CandidateProfileForm({
   const gliActive = property.gliMode === "STRICT" || property.gliMode === "INDICATIVE" || property.hasGli;
 
   if (gliActive) {
-    if (employmentStatus === "CDI") {
+    if (employmentStatus === "CDI" || employmentStatus === "CDI_MOBILITY") {
       if (isInProbationPeriod) {
         targetThreshold = 37;
         hasGliIssue = true;
         gliIssueMessage = "Ce profil peut ne pas être éligible selon certaines garanties loyers impayés (période d'essai).";
-      } else if (isCdiMobility) {
+      } else if (isCdiMobility || employmentStatus === "CDI_MOBILITY") {
         targetThreshold = 30;
       } else {
         targetThreshold = 37;

@@ -65,35 +65,22 @@ export default async function DossierPage({
   }
 
   // --- ÉTAPE 4 : Dépôt documentaire dynamique ---
-  let EXPECTED_DOCUMENTS = application.documentRequirements;
+  // Sync document requirements on page load to ensure they match the current property settings and candidate situation
+  const { syncDocumentRequirements } = await import("@/lib/documentRequirements");
+  await syncDocumentRequirements(applicationId, application.property, application.candidate);
 
-  // Auto-generation fallback if DB is empty
-  if (EXPECTED_DOCUMENTS.length === 0) {
-    const reqDefs = generateDocumentRequirements(application.property, application.candidate);
-    for (const def of reqDefs) {
-      await prisma.documentRequirement.create({
-        data: {
-          applicationId,
-          key: def.key,
-          label: def.label,
-          description: def.description,
-          category: def.category,
-          required: def.required,
-          recommended: def.recommended,
-          appliesTo: def.appliesTo,
-          maxFiles: def.maxFiles,
-          status: "PENDING"
+  const reloadedApp = await prisma.application.findUnique({
+    where: { id: applicationId },
+    include: {
+      documentRequirements: {
+        include: {
+          documents: true,
         }
-      });
-    }
-    const reloaded = await prisma.application.findUnique({
-      where: { id: applicationId },
-      include: {
-        documentRequirements: { include: { documents: true } }
       }
-    });
-    EXPECTED_DOCUMENTS = reloaded?.documentRequirements || [];
-  }
+    }
+  });
+
+  const EXPECTED_DOCUMENTS = reloadedApp?.documentRequirements || [];
 
   // Calcul progression
   const mandatoryDocs = EXPECTED_DOCUMENTS.filter(d => d.required);
@@ -168,6 +155,7 @@ export default async function DossierPage({
   const getStatusLabelFr = (status: string) => {
     if (status === "STUDENT") return "Étudiant(e)";
     if (status === "CDI") return "Salarié CDI";
+    if (status === "CDI_MOBILITY") return "Salarié CDI (mobilité)";
     if (status === "CDD") return "Salarié CDD";
     if (status === "PUBLIC_SERVANT") return "Fonctionnaire";
     if (status === "SELF_EMPLOYED") return "Indépendant / Freelance";

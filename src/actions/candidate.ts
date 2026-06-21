@@ -616,93 +616,9 @@ export async function saveCandidateProfileAction(prevState: any, formData: FormD
       include: { roommates: true, guarantor: true }
     });
 
-    // Générer les nouvelles exigences
-    const reqDefs = generateDocumentRequirements(application.property, candidateData);
-
-    // Detach and clean up requirements
-    const currentReqKeys = reqDefs.map(r => r.key);
-    
-    // Rendre null requirementId pour les documents dont l'exigence va disparaître
-    await prisma.document.updateMany({
-      where: { 
-        applicationId, 
-        requirement: { 
-          key: { notIn: currentReqKeys } 
-        } 
-      },
-      data: { requirementId: null }
-    });
-
-    // Supprimer les exigences devenues obsolètes
-    await prisma.documentRequirement.deleteMany({
-      where: { 
-        applicationId, 
-        key: { notIn: currentReqKeys } 
-      }
-    });
-
-    // Insérer / Mettre à jour les exigences actuelles
-    for (const def of reqDefs) {
-      const existing = await prisma.documentRequirement.findFirst({
-        where: { applicationId, key: def.key }
-      });
-
-      if (existing) {
-        await prisma.documentRequirement.update({
-          where: { id: existing.id },
-          data: {
-            label: def.label,
-            description: def.description,
-            category: def.category,
-            required: def.required,
-            recommended: def.recommended,
-            appliesTo: def.appliesTo,
-            maxFiles: def.maxFiles,
-          }
-        });
-      } else {
-        await prisma.documentRequirement.create({
-          data: {
-            applicationId,
-            key: def.key,
-            label: def.label,
-            description: def.description,
-            category: def.category,
-            required: def.required,
-            recommended: def.recommended,
-            appliesTo: def.appliesTo,
-            maxFiles: def.maxFiles,
-            status: "PENDING"
-          }
-        });
-      }
-    }
-
-    // Réassocier les documents existants par rapport aux nouvelles exigences en DB
-    const allRequirements = await prisma.documentRequirement.findMany({
-      where: { applicationId }
-    });
-    const allDocuments = await prisma.document.findMany({
-      where: { applicationId }
-    });
-
-    for (const doc of allDocuments) {
-      const req = allRequirements.find(r => {
-        if (r.key === "candidate_identity" && doc.type === "IDENTITY") return true;
-        if (r.key === "candidate_domicile" && doc.type === "DOMICILE") return true;
-        if (r.key.includes("income") && doc.type === "INCOME") return true;
-        if (r.key.includes("employment") && doc.type === "EMPLOYMENT") return true;
-        if (r.key.includes("tax") && doc.type === "TAX") return true;
-        if (r.key.includes("guarantor") && doc.type === "GUARANTOR") return true;
-        return false;
-      });
-      if (req && doc.requirementId !== req.id) {
-        await prisma.document.update({
-          where: { id: doc.id },
-          data: { requirementId: req.id }
-        });
-      }
-    }
+    // Sync document requirements
+    const { syncDocumentRequirements } = await import("@/lib/documentRequirements");
+    await syncDocumentRequirements(applicationId, application.property, candidateData);
 
     await prisma.auditLog.create({
       data: {

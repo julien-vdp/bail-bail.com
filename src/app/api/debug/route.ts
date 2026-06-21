@@ -3,26 +3,22 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const properties = await prisma.property.findMany({
+    const applications = await prisma.application.findMany({
       orderBy: { createdAt: "desc" },
-      take: 3,
+      take: 5,
       include: {
-        visitSlots: true
+        property: true,
+        candidate: {
+          include: {
+            roommates: true,
+            guarantor: true,
+          }
+        },
+        documentRequirements: true,
       }
     });
 
-    const info = properties.map(p => ({
-      code: p.code,
-      title: p.title,
-      slotsCount: p.visitSlots.length,
-      slots: p.visitSlots.map(s => ({
-        id: s.id,
-        date: s.date.toISOString(),
-        status: s.status
-      }))
-    }));
-
-    return NextResponse.json({ success: true, properties: info });
+    return NextResponse.json({ success: true, applications });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
