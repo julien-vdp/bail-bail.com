@@ -25,15 +25,9 @@ export function AdFooter() {
   return (
     <footer className={footerClass}>
       <div className="max-w-7xl mx-auto px-4 flex flex-col items-center justify-center">
-        <p className="text-xs text-slate-400 mb-4">Espace Sponsorisé</p>
-        
-        {/* AdSense Unit */}
-        <div className="w-full max-w-[728px] min-h-[90px] flex items-center justify-center overflow-hidden">
-          <ins className="adsbygoogle"
-               style={{display: 'inline-block', width: '728px', height: '90px'}}
-               data-ad-client="ca-pub-7186584588652268"></ins>
-          <script dangerouslySetInnerHTML={{ __html: '(window.adsbygoogle = window.adsbygoogle || []).push({});' }} />
-        </div>
+        <p className={isHome ? "text-xs text-slate-400 font-medium" : "text-xs text-slate-500 font-medium"}>
+          &copy; {new Date().getFullYear()} Bail-Bail.com. Tous droits réservés.
+        </p>
       </div>
     </footer>
   );
