@@ -101,6 +101,10 @@ export async function uploadDocumentAction(prevState: any, formData: FormData) {
     await fs.writeFile(filePath, finalBuffer);
 
     // Enregistrer en base
+    const dbRequirement = await prisma.documentRequirement.findFirst({
+      where: { applicationId, key: type }
+    });
+
     await prisma.document.create({
       data: {
         id: documentId,
@@ -112,6 +116,7 @@ export async function uploadDocumentAction(prevState: any, formData: FormData) {
         size: processedBuffer.length,
         expiresAt: addDays(new Date(), 30), // Simulation d'expiration
         candidateApproved: false, // Doit être validé par le candidat
+        requirementId: dbRequirement ? dbRequirement.id : null,
       },
     });
 

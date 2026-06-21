@@ -35,6 +35,13 @@ async function main() {
       gliMonthlyIncomeThreshold: 4050,
       acceptsGuarantor: false,
       acceptsStudent: false,
+      rentWithCharges: 1450,
+      gliMode: 'STRICT',
+      acceptsStudents: false,
+      acceptsGuarantors: false,
+      acceptsColocation: false,
+      acceptsUnstableProfiles: false,
+      tenantAlreadyInPlaceStatus: 'NEW_TENANT',
     },
   });
 
@@ -55,6 +62,13 @@ async function main() {
       gliMonthlyIncomeThreshold: 2700,
       acceptsGuarantor: true,
       acceptsStudent: true,
+      rentWithCharges: 950,
+      gliMode: 'INDICATIVE',
+      acceptsStudents: true,
+      acceptsGuarantors: true,
+      acceptsColocation: true,
+      acceptsUnstableProfiles: false,
+      tenantAlreadyInPlaceStatus: 'NEW_TENANT',
     },
   });
 
@@ -75,6 +89,13 @@ async function main() {
       gliMonthlyIncomeThreshold: null,
       acceptsGuarantor: true,
       acceptsStudent: true,
+      rentWithCharges: 760,
+      gliMode: 'NONE',
+      acceptsStudents: true,
+      acceptsGuarantors: true,
+      acceptsColocation: true,
+      acceptsUnstableProfiles: true,
+      tenantAlreadyInPlaceStatus: 'NEW_TENANT',
     },
   });
 

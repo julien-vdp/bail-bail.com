@@ -81,6 +81,8 @@ export function PropertyEditForm({
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [hasGli, setHasGli] = useState(property.hasGli || property.isEligibleGLI || false);
+  const [gliMode, setGliMode] = useState<string>(property.gliMode || (property.hasGli || property.isEligibleGLI ? "INDICATIVE" : "NONE"));
+  const [rentWithCharges, setRentWithCharges] = useState<number>(property.rentWithCharges || property.rent || 0);
   const [gliMonthlyIncomeThreshold, setGliMonthlyIncomeThreshold] = useState(
     property.gliMonthlyIncomeThreshold !== null && property.gliMonthlyIncomeThreshold !== undefined
       ? String(property.gliMonthlyIncomeThreshold)
@@ -89,14 +91,22 @@ export function PropertyEditForm({
       : ""
   );
   const [acceptsGuarantor, setAcceptsGuarantor] = useState(property.acceptsGuarantor !== false);
+  const [acceptsGuarantors, setAcceptsGuarantors] = useState(property.acceptsGuarantors !== false);
   const [acceptsStudent, setAcceptsStudent] = useState(
     property.acceptsStudent !== false && property.studentPolicy !== "REFUSED"
   );
+  const [acceptsStudents, setAcceptsStudents] = useState(property.acceptsStudents !== false);
+  const [acceptsColocation, setAcceptsColocation] = useState(property.acceptsColocation || false);
+  const [acceptsUnstableProfiles, setAcceptsUnstableProfiles] = useState(property.acceptsUnstableProfiles || false);
+  const [tenantAlreadyInPlaceStatus, setTenantAlreadyInPlaceStatus] = useState<string>(property.tenantAlreadyInPlaceStatus || "NEW_TENANT");
+  const [studentGuarantorPolicy, setStudentGuarantorPolicy] = useState<string>("OBLIGATORY"); // OBLIGATORY, OPTIONAL, NONE
+  const [colocationIncomeCumulative, setColocationIncomeCumulative] = useState<boolean>(true);
   const [requiresTaxNotice, setRequiresTaxNotice] = useState(property.requiresTaxNotice !== false);
   const [requiresCurrentAddressProof, setRequiresCurrentAddressProof] = useState(property.requiresCurrentAddressProof !== false);
   const [requiresEmploymentProof, setRequiresEmploymentProof] = useState(property.requiresEmploymentProof !== false);
   const [requiresIncomeProof, setRequiresIncomeProof] = useState(property.requiresIncomeProof !== false);
   const [customInstructions, setCustomInstructions] = useState(property.customInstructions || "");
+  const [customDocumentInstructions, setCustomDocumentInstructions] = useState(property.customDocumentInstructions || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Separate bank images and uploaded images
@@ -230,10 +240,10 @@ export function PropertyEditForm({
                 <div className="space-y-1">
                   <h3 className="text-lg font-bold text-[#092B5A] flex items-center gap-2">
                     <Sliders className="w-5 h-5 text-[#1463FF]" />
-                    Paramètres du dossier locatif
+                    Conditions du dossier locatif
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Personnalisez finement la checklist et les exigences documentaires pour cette annonce.
+                    Définissez les critères d'éligibilité et configurez le moteur conditionnel pour les pièces justificatives.
                   </p>
                 </div>
                 <div className="w-full lg:w-[280px] shrink-0">
@@ -243,160 +253,429 @@ export function PropertyEditForm({
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
-                  {/* 1. Assurances & Éligibilité */}
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-slate-800 border-b pb-1">Conditions de garanties</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2 border rounded-xl p-4 bg-white shadow-sm">
-                        <div className="flex items-start space-x-3">
-                          <Checkbox 
-                            id="hasGli" 
-                            name="hasGli" 
-                            checked={hasGli}
-                            onCheckedChange={(c) => setHasGli(c === true)}
+                  {/* Champ 1 : Garantie Loyers Impayés */}
+                  <div className="space-y-3 bg-white p-5 rounded-2xl border shadow-sm">
+                    <div>
+                      <label className="text-sm font-bold text-[#092B5A] block mb-1">
+                        Le logement est-il couvert par une Garantie Loyers Impayés (GLI) ?
+                      </label>
+                      <p className="text-xs text-slate-500 mb-3">
+                        L'assurance loyers impayés impose des critères stricts de solvabilité aux locataires.
+                      </p>
+                      <div className="flex gap-4">
+                        <label className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 cursor-pointer transition-all ${
+                          gliMode !== "NONE" 
+                            ? "border-[#1463FF] bg-[#1463FF]/5 text-[#1463FF] font-bold" 
+                            : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                        }`}>
+                          <input 
+                            type="radio" 
+                            name="gli_active_toggle" 
+                            checked={gliMode !== "NONE"} 
+                            onChange={() => setGliMode("INDICATIVE")} 
+                            className="sr-only"
                           />
-                          <div className="grid gap-1 leading-none">
-                            <label htmlFor="hasGli" className="text-sm font-bold text-[#092B5A] cursor-pointer">
-                              Garantie Loyers Impayés activée
-                            </label>
-                            <p className="text-xs text-slate-400">
-                              Activez cette option si le logement est couvert par une assurance loyers impayés.
-                            </p>
-                          </div>
-                        </div>
+                          <span>Oui, couvert</span>
+                        </label>
+                        <label className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 cursor-pointer transition-all ${
+                          gliMode === "NONE" 
+                            ? "border-[#092B5A] bg-[#092B5A]/5 text-[#092B5A] font-bold" 
+                            : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                        }`}>
+                          <input 
+                            type="radio" 
+                            name="gli_active_toggle" 
+                            checked={gliMode === "NONE"} 
+                            onChange={() => setGliMode("NONE")} 
+                            className="sr-only"
+                          />
+                          <span>Non couvert</span>
+                        </label>
+                      </div>
+                    </div>
 
-                        {hasGli && (
-                          <div className="mt-4 pt-3 border-t pl-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                            <label className="text-xs font-bold text-[#092B5A] block">
-                              Revenu net mensuel minimum demandé (€)
+                    {/* Sous-section GLI dynamique */}
+                    {gliMode !== "NONE" && (
+                      <div className="pt-4 border-t border-slate-100 space-y-4 animate-in fade-in duration-300">
+                        {/* A. Loyer charges comprises & Mode GLI */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs font-bold text-[#092B5A] block mb-1">
+                              Loyer charges comprises (€) <span className="text-red-500">*</span>
                             </label>
                             <Input 
-                              name="gliMonthlyIncomeThreshold" 
                               type="number" 
-                              value={gliMonthlyIncomeThreshold}
-                              onChange={(e) => setGliMonthlyIncomeThreshold(e.target.value)}
-                              placeholder="Ex: 4050" 
-                              className="h-9 text-sm"
+                              required 
+                              name="rentWithCharges" 
+                              value={rentWithCharges} 
+                              onChange={(e) => {
+                                const val = Number(e.target.value);
+                                setRentWithCharges(val);
+                                // Suggest default threshold if not set manually
+                                setGliMonthlyIncomeThreshold(String(Math.round(val * 3)));
+                              }}
+                              className="h-10 text-sm"
                             />
-                            <p className="text-[10px] text-slate-400">
-                              Montant généralement demandé par l’assureur pour valider le dossier.
-                            </p>
                           </div>
+
+                          <div>
+                            <label className="text-xs font-bold text-[#092B5A] block mb-1">
+                              Mode de filtrage GLI
+                            </label>
+                            <select
+                              value={gliMode}
+                              onChange={(e) => setGliMode(e.target.value)}
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                            >
+                              <option value="INDICATIVE">Indicatif (Conseillé, n'empêche pas le dépôt)</option>
+                              <option value="STRICT">Strict (Avertissement fort sur l'éligibilité)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* B. Seuil de revenu minimum */}
+                        <div>
+                          <div className="flex justify-between items-center mb-1">
+                            <label className="text-xs font-bold text-[#092B5A]">
+                              Seuil de revenu mensuel minimum (€)
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setGliMonthlyIncomeThreshold(String(Math.round(rentWithCharges * 3)))}
+                              className="text-[10px] text-[#1463FF] hover:underline font-semibold"
+                            >
+                              Calculer à 3x ({Math.round(rentWithCharges * 3)} €)
+                            </button>
+                          </div>
+                          <Input 
+                            type="number" 
+                            value={gliMonthlyIncomeThreshold} 
+                            onChange={(e) => setGliMonthlyIncomeThreshold(e.target.value)}
+                            placeholder="Ex: 3000"
+                            className="h-10 text-sm"
+                          />
+                          <p className="text-[11px] text-slate-500 mt-1">
+                            Le seuil dépend des règles de votre assurance. Bail-Bail peut vous aider à structurer la demande de pièces, mais ne remplace pas la validation finale de l’assureur.
+                          </p>
+                        </div>
+
+                        {/* C. Règles de solvabilité GLI Card */}
+                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-2">
+                          <h5 className="font-bold text-[#092B5A] text-xs">Règles indicatives de solvabilité GLI :</h5>
+                          <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5 list-disc pl-4 text-slate-600">
+                            <li>CDI hors période d'essai : max 37% d'effort</li>
+                            <li>Fonctionnaire : max 37% d'effort</li>
+                            <li>Indépendant (≥ 2 ans) : max 33% d'effort</li>
+                            <li>CDI en mobilité : max 30% d'effort</li>
+                            <li>CDD (reste ≥ 12 mois) : max 25% d'effort</li>
+                            <li>Retraité : max 37% d'effort</li>
+                          </ul>
+                        </div>
+
+                        {/* D. Profils acceptés */}
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-[#092B5A] block">
+                            Profils de solvabilité éligibles avec votre contrat GLI :
+                          </label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs bg-slate-50 p-4 rounded-xl border">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <Checkbox checked={true} disabled />
+                              <span className="text-slate-600">CDI hors période d’essai</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <Checkbox checked={true} disabled />
+                              <span className="text-slate-600">Fonctionnaire</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <Checkbox checked={true} disabled />
+                              <span className="text-slate-600">Indépendant &gt; 2 ans</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <Checkbox checked={true} disabled />
+                              <span className="text-slate-600">Retraité</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <Checkbox checked={true} disabled />
+                              <span className="text-slate-600">CDI en mobilité</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <Checkbox checked={true} disabled />
+                              <span className="text-slate-600">CDD restant &ge; 12 mois</span>
+                            </label>
+                            
+                            <label htmlFor="acceptsStudentsCheckbox" className="flex items-center gap-2 cursor-pointer">
+                              <Checkbox 
+                                id="acceptsStudentsCheckbox"
+                                checked={acceptsStudents} 
+                                onCheckedChange={(checked) => setAcceptsStudents(checked === true)}
+                              />
+                              <span className="text-slate-700 font-medium">Étudiant / apprenti avec garant</span>
+                            </label>
+                            
+                            <label htmlFor="acceptsColocationCheckbox" className="flex items-center gap-2 cursor-pointer">
+                              <Checkbox 
+                                id="acceptsColocationCheckbox"
+                                checked={acceptsColocation} 
+                                onCheckedChange={(checked) => setAcceptsColocation(checked === true)}
+                              />
+                              <span className="text-slate-700 font-medium">Colocation cumulable</span>
+                            </label>
+
+                            <label htmlFor="acceptsUnstableProfilesCheckbox" className="flex items-center gap-2 cursor-pointer md:col-span-2 border-t pt-2 mt-1">
+                              <Checkbox 
+                                id="acceptsUnstableProfilesCheckbox"
+                                checked={acceptsUnstableProfiles} 
+                                onCheckedChange={(checked) => setAcceptsUnstableProfiles(checked === true)}
+                              />
+                              <div>
+                                <span className="text-slate-700 font-medium block">Autres profils (CDD court, chômage, intérim)</span>
+                                <span className="text-[10px] text-slate-400">Non standard, requiert une option ou validation explicite.</span>
+                              </div>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Champ 2 : Étudiants / Apprentis */}
+                  <div className="space-y-3 bg-white p-5 rounded-2xl border shadow-sm">
+                    <div>
+                      <label className="text-sm font-bold text-[#092B5A] block mb-1">
+                        Acceptez-vous les étudiants ou apprentis ?
+                      </label>
+                      <div className="flex gap-4 mt-2">
+                        <label className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border-2 cursor-pointer transition-all ${
+                          acceptsStudents 
+                            ? "border-[#1463FF] bg-[#1463FF]/5 text-[#1463FF] font-bold" 
+                            : "border-slate-200 bg-white text-slate-600"
+                        }`}>
+                          <input 
+                            type="radio" 
+                            name="accepts_students_toggle" 
+                            checked={acceptsStudents} 
+                            onChange={() => setAcceptsStudents(true)} 
+                            className="sr-only"
+                          />
+                          <span>Oui</span>
+                        </label>
+                        <label className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border-2 cursor-pointer transition-all ${
+                          !acceptsStudents 
+                            ? "border-[#092B5A] bg-[#092B5A]/5 text-[#092B5A] font-bold" 
+                            : "border-slate-200 bg-white text-slate-600"
+                        }`}>
+                          <input 
+                            type="radio" 
+                            name="accepts_students_toggle" 
+                            checked={!acceptsStudents} 
+                            onChange={() => setAcceptsStudents(false)} 
+                            className="sr-only"
+                          />
+                          <span>Non</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {acceptsStudents && (
+                      <div className="pt-3 border-t border-slate-100 space-y-3 animate-in fade-in duration-200">
+                        <label className="text-xs font-bold text-[#092B5A] block mb-1">
+                          Demander une caution solidaire (garant) ?
+                        </label>
+                        <select
+                          value={studentGuarantorPolicy}
+                          onChange={(e) => {
+                            setStudentGuarantorPolicy(e.target.value);
+                            if (e.target.value === "OBLIGATORY" || e.target.value === "OPTIONAL") {
+                              setAcceptsGuarantors(true);
+                            }
+                          }}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                        >
+                          <option value="OBLIGATORY">Oui, obligatoire</option>
+                          <option value="OPTIONAL">Oui, facultative</option>
+                          <option value="NONE">Non, pas de caution demandée</option>
+                        </select>
+                        {gliMode !== "NONE" && (
+                          <p className="text-[11px] text-amber-600 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                            ℹ️ Dans certaines GLI, la caution solidaire est admise uniquement pour les étudiants ou apprentis.
+                          </p>
                         )}
                       </div>
-
-                      <div className="space-y-4 border rounded-xl p-4 bg-white shadow-sm">
-                        <div className="flex items-start space-x-3">
-                          <Checkbox 
-                            id="acceptsGuarantor" 
-                            name="acceptsGuarantor" 
-                            checked={acceptsGuarantor}
-                            onCheckedChange={(c) => setAcceptsGuarantor(c === true)}
-                          />
-                          <div className="grid gap-1 leading-none">
-                            <label htmlFor="acceptsGuarantor" className="text-sm font-bold text-[#092B5A] cursor-pointer">
-                              Accepter les garants
-                            </label>
-                            <p className="text-xs text-slate-400">
-                              Permettre aux candidats d’ajouter un garant à leur dossier.
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-start space-x-3 border-t pt-3">
-                          <Checkbox 
-                            id="acceptsStudent" 
-                            name="acceptsStudent" 
-                            checked={acceptsStudent}
-                            onCheckedChange={(c) => setAcceptsStudent(c === true)}
-                          />
-                          <div className="grid gap-1 leading-none">
-                            <label htmlFor="acceptsStudent" className="text-sm font-bold text-[#092B5A] cursor-pointer">
-                              Accepter les profils étudiants
-                            </label>
-                            <p className="text-xs text-slate-400">
-                              Permettre aux étudiants de candidater.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    )}
                   </div>
 
-                  {/* 2. Pièces exigées */}
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-slate-800 border-b pb-1">Pièces justificatives requises</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex items-start space-x-3 border rounded-xl p-3 bg-white shadow-sm">
-                        <Checkbox 
-                          id="requiresCurrentAddressProof" 
-                          name="requiresCurrentAddressProof" 
-                          checked={requiresCurrentAddressProof}
-                          onCheckedChange={(c) => setRequiresCurrentAddressProof(c === true)}
-                        />
-                        <div className="grid gap-1 leading-none">
-                          <label htmlFor="requiresCurrentAddressProof" className="text-sm font-semibold cursor-pointer">
-                            Justificatif de domicile actuel
-                          </label>
-                          <p className="text-xs text-slate-400">Quittance de loyer, attestation d'hébergement, etc.</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start space-x-3 border rounded-xl p-3 bg-white shadow-sm">
-                        <Checkbox 
-                          id="requiresEmploymentProof" 
-                          name="requiresEmploymentProof" 
-                          checked={requiresEmploymentProof}
-                          onCheckedChange={(c) => setRequiresEmploymentProof(c === true)}
-                        />
-                        <div className="grid gap-1 leading-none">
-                          <label htmlFor="requiresEmploymentProof" className="text-sm font-semibold cursor-pointer">
-                            Justificatif de situation professionnelle
-                          </label>
-                          <p className="text-xs text-slate-400">Contrat de travail, attestation employeur, Kbis...</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start space-x-3 border rounded-xl p-3 bg-white shadow-sm">
-                        <Checkbox 
-                          id="requiresIncomeProof" 
-                          name="requiresIncomeProof" 
-                          checked={requiresIncomeProof}
-                          onCheckedChange={(c) => setRequiresIncomeProof(c === true)}
-                        />
-                        <div className="grid gap-1 leading-none">
-                          <label htmlFor="requiresIncomeProof" className="text-sm font-semibold cursor-pointer">
-                            Justificatifs de revenus
-                          </label>
-                          <p className="text-xs text-slate-400">3 dernières fiches de paie, justificatifs de pension, etc.</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start space-x-3 border rounded-xl p-3 bg-white shadow-sm">
-                        <Checkbox 
-                          id="requiresTaxNotice" 
-                          name="requiresTaxNotice" 
-                          checked={requiresTaxNotice}
-                          onCheckedChange={(c) => setRequiresTaxNotice(c === true)}
-                        />
-                        <div className="grid gap-1 leading-none">
-                          <label htmlFor="requiresTaxNotice" className="text-sm font-semibold cursor-pointer">
-                            Dernier avis d'imposition
-                          </label>
-                          <p className="text-xs text-slate-400">Avis d'imposition requis ou non pour le dossier.</p>
-                        </div>
+                  {/* Champ 3 : Garants pour les autres profils */}
+                  <div className="space-y-3 bg-white p-5 rounded-2xl border shadow-sm">
+                    <div>
+                      <label className="text-sm font-bold text-[#092B5A] block mb-1">
+                        Acceptez-vous les garants pour les autres profils ?
+                      </label>
+                      <div className="flex gap-4 mt-2">
+                        <label className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border-2 cursor-pointer transition-all ${
+                          acceptsGuarantors 
+                            ? "border-[#1463FF] bg-[#1463FF]/5 text-[#1463FF] font-bold" 
+                            : "border-slate-200 bg-white text-slate-600"
+                        }`}>
+                          <input 
+                            type="radio" 
+                            name="accepts_guarantors_toggle" 
+                            checked={acceptsGuarantors} 
+                            onChange={() => setAcceptsGuarantors(true)} 
+                            className="sr-only"
+                          />
+                          <span>Oui</span>
+                        </label>
+                        <label className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border-2 cursor-pointer transition-all ${
+                          !acceptsGuarantors 
+                            ? "border-[#092B5A] bg-[#092B5A]/5 text-[#092B5A] font-bold" 
+                            : "border-slate-200 bg-white text-slate-600"
+                        }`}>
+                          <input 
+                            type="radio" 
+                            name="accepts_guarantors_toggle" 
+                            checked={!acceptsGuarantors} 
+                            onChange={() => setAcceptsGuarantors(false)} 
+                            className="sr-only"
+                          />
+                          <span>Non</span>
+                        </label>
                       </div>
                     </div>
+
+                    {gliMode !== "NONE" && acceptsGuarantors && (
+                      <p className="text-[11px] text-amber-600 bg-amber-50 p-2.5 rounded-lg border border-amber-200 animate-in fade-in">
+                        ⚠️ Attention : selon les contrats GLI, un garant ne remplace pas forcément les critères de solvabilité du candidat, sauf cas prévu comme étudiant ou apprenti.
+                      </p>
+                    )}
                   </div>
 
-                  {/* 3. Consignes supplémentaires */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-[#092B5A] block">Consignes complémentaires</label>
+                  {/* Champ 4 : Colocation */}
+                  <div className="space-y-3 bg-white p-5 rounded-2xl border shadow-sm">
+                    <div>
+                      <label className="text-sm font-bold text-[#092B5A] block mb-1">
+                        Acceptez-vous la colocation ?
+                      </label>
+                      <div className="flex gap-4 mt-2">
+                        <label className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border-2 cursor-pointer transition-all ${
+                          acceptsColocation 
+                            ? "border-[#1463FF] bg-[#1463FF]/5 text-[#1463FF] font-bold" 
+                            : "border-slate-200 bg-white text-slate-600"
+                        }`}>
+                          <input 
+                            type="radio" 
+                            name="accepts_colocation_toggle" 
+                            checked={acceptsColocation} 
+                            onChange={() => setAcceptsColocation(true)} 
+                            className="sr-only"
+                          />
+                          <span>Oui</span>
+                        </label>
+                        <label className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border-2 cursor-pointer transition-all ${
+                          !acceptsColocation 
+                            ? "border-[#092B5A] bg-[#092B5A]/5 text-[#092B5A] font-bold" 
+                            : "border-slate-200 bg-white text-slate-600"
+                        }`}>
+                          <input 
+                            type="radio" 
+                            name="accepts_colocation_toggle" 
+                            checked={!acceptsColocation} 
+                            onChange={() => setAcceptsColocation(false)} 
+                            className="sr-only"
+                          />
+                          <span>Non</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {acceptsColocation && (
+                      <div className="pt-3 border-t border-slate-100 space-y-3 animate-in fade-in duration-200">
+                        <label className="text-xs font-bold text-[#092B5A] block mb-1">
+                          Les revenus des colocataires peuvent-ils être cumulés ?
+                        </label>
+                        <div className="flex gap-4">
+                          <label className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg border cursor-pointer transition-all text-xs ${
+                            colocationIncomeCumulative ? "border-[#1463FF] bg-[#1463FF]/5 text-[#1463FF] font-medium" : "border-slate-200 bg-white text-slate-600"
+                          }`}>
+                            <input 
+                              type="radio" 
+                              name="colocation_income_toggle" 
+                              checked={colocationIncomeCumulative} 
+                              onChange={() => setColocationIncomeCumulative(true)} 
+                              className="sr-only"
+                            />
+                            <span>Oui</span>
+                          </label>
+                          <label className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg border cursor-pointer transition-all text-xs ${
+                            !colocationIncomeCumulative ? "border-[#092B5A] bg-[#092B5A]/5 text-[#092B5A] font-medium" : "border-slate-200 bg-white text-slate-600"
+                          }`}>
+                            <input 
+                              type="radio" 
+                              name="colocation_income_toggle" 
+                              checked={!colocationIncomeCumulative} 
+                              onChange={() => setColocationIncomeCumulative(false)} 
+                              className="sr-only"
+                            />
+                            <span>Non</span>
+                          </label>
+                        </div>
+                        <p className="text-[11px] text-slate-500">
+                          💡 Les revenus des locataires signataires peuvent généralement être cumulés pour analyser la solvabilité.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Champ 5 : Locataire déjà en place */}
+                  <div className="space-y-3 bg-white p-5 rounded-2xl border shadow-sm">
+                    <div>
+                      <label className="text-sm font-bold text-[#092B5A] block mb-1">
+                        Locataire déjà en place ?
+                      </label>
+                      <p className="text-xs text-slate-500 mb-3">
+                        Si le candidat réside déjà dans le logement, des justificatifs d'historique de paiement de loyers sont demandés.
+                      </p>
+                      <select
+                        value={tenantAlreadyInPlaceStatus}
+                        onChange={(e) => setTenantAlreadyInPlaceStatus(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                      >
+                        <option value="NEW_TENANT">Non, nouveau locataire</option>
+                        <option value="IN_PLACE_LESS_THAN_6_MONTHS">Oui, depuis moins de 6 mois</option>
+                        <option value="IN_PLACE_MORE_THAN_6_MONTHS">Oui, depuis plus de 6 mois</option>
+                      </select>
+                    </div>
+
+                    {tenantAlreadyInPlaceStatus === "IN_PLACE_LESS_THAN_6_MONTHS" && (
+                      <div className="p-3 bg-blue-50/50 text-[#092B5A] rounded-xl border border-blue-100 text-xs space-y-1 animate-in fade-in">
+                        <span className="font-bold">Pièces supplémentaires exigées :</span>
+                        <ul className="list-disc pl-4 space-y-0.5 text-slate-600">
+                          <li>Attestation de non-sinistralité de l'assureur</li>
+                          <li>Décompte des loyers payés depuis l’entrée dans les lieux</li>
+                        </ul>
+                      </div>
+                    )}
+
+                    {tenantAlreadyInPlaceStatus === "IN_PLACE_MORE_THAN_6_MONTHS" && (
+                      <div className="p-3 bg-blue-50/50 text-[#092B5A] rounded-xl border border-blue-100 text-xs space-y-1 animate-in fade-in">
+                        <span className="font-bold">Pièces supplémentaires exigées :</span>
+                        <ul className="list-disc pl-4 space-y-0.5 text-slate-600">
+                          <li>Décompte des loyers réglés sur les 6 derniers mois</li>
+                          <li>Justificatifs bancaires des règlements</li>
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Consignes supplémentaires de documents */}
+                  <div className="space-y-2 bg-white p-5 rounded-2xl border shadow-sm">
+                    <label className="text-sm font-bold text-[#092B5A] block">
+                      Instructions spécifiques de pièces jointes (facultatif)
+                    </label>
                     <Textarea 
-                      name="customInstructions" 
-                      value={customInstructions}
-                      onChange={(e) => setCustomInstructions(e.target.value)}
-                      placeholder="Ex: Merci de déposer les documents au format PDF si possible."
+                      name="customDocumentInstructions" 
+                      value={customDocumentInstructions}
+                      onChange={(e) => setCustomDocumentInstructions(e.target.value)}
+                      placeholder="Ex: Merci de fournir les quittances avec signatures ou QR codes si possible."
                       className="min-h-[85px] text-sm"
                     />
                   </div>
@@ -408,36 +687,73 @@ export function PropertyEditForm({
                   <ul className="space-y-3 text-xs">
                     <li className="flex justify-between items-center pb-2 border-b border-slate-200/50">
                       <span className="text-slate-500 font-medium">GLI (Assurance)</span>
-                      <span className={`font-bold px-2 py-0.5 rounded-full ${hasGli ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-600'}`}>
-                        {hasGli ? 'Activée' : 'Non activée'}
+                      <span className={`font-bold px-2 py-0.5 rounded-full ${gliMode !== "NONE" ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-600'}`}>
+                        {gliMode !== "NONE" ? (gliMode === "STRICT" ? "Stricte" : "Indicative") : 'Non activée'}
                       </span>
                     </li>
-                    {hasGli && (
-                      <li className="flex justify-between items-center pb-2 border-b border-slate-200/50">
-                        <span className="text-slate-500 font-medium">Revenu minimum</span>
-                        <span className="font-bold text-[#092B5A]">
-                          {gliMonthlyIncomeThreshold ? `${gliMonthlyIncomeThreshold} €/mois` : `3x le loyer (${property.rent * 3} €/mois)`}
-                        </span>
-                      </li>
+                    {gliMode !== "NONE" && (
+                      <>
+                        <li className="flex justify-between items-center pb-2 border-b border-slate-200/50">
+                          <span className="text-slate-500 font-medium">Loyer avec charges</span>
+                          <span className="font-bold text-[#092B5A]">{rentWithCharges} €/mois</span>
+                        </li>
+                        <li className="flex justify-between items-center pb-2 border-b border-slate-200/50">
+                          <span className="text-slate-500 font-medium">Revenu minimum</span>
+                          <span className="font-bold text-[#092B5A]">
+                            {gliMonthlyIncomeThreshold ? `${gliMonthlyIncomeThreshold} €/mois` : `${Math.round(rentWithCharges * 3)} €/mois`}
+                          </span>
+                        </li>
+                      </>
                     )}
                     <li className="flex justify-between items-center pb-2 border-b border-slate-200/50">
                       <span className="text-slate-500 font-medium">Garants</span>
-                      <span className={`font-bold px-2 py-0.5 rounded-full ${acceptsGuarantor ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {acceptsGuarantor ? 'Acceptés' : 'Refusés'}
+                      <span className={`font-bold px-2 py-0.5 rounded-full ${acceptsGuarantors ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {acceptsGuarantors ? 'Acceptés' : 'Refusés'}
                       </span>
                     </li>
                     <li className="flex justify-between items-center pb-2 border-b border-slate-200/50">
                       <span className="text-slate-500 font-medium">Étudiants</span>
-                      <span className={`font-bold px-2 py-0.5 rounded-full ${acceptsStudent ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {acceptsStudent ? 'Acceptés' : 'Refusés'}
+                      <span className={`font-bold px-2 py-0.5 rounded-full ${acceptsStudents ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {acceptsStudents ? 'Acceptés' : 'Refusés'}
+                      </span>
+                    </li>
+                    <li className="flex justify-between items-center pb-2 border-b border-slate-200/50">
+                      <span className="text-slate-500 font-medium">Colocation</span>
+                      <span className={`font-bold px-2 py-0.5 rounded-full ${acceptsColocation ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {acceptsColocation ? 'Acceptée' : 'Refusée'}
+                      </span>
+                    </li>
+                    <li className="flex justify-between items-center pb-2 border-b border-slate-200/50">
+                      <span className="text-slate-500 font-medium">Déjà en place ?</span>
+                      <span className="font-semibold text-slate-700">
+                        {tenantAlreadyInPlaceStatus === "NEW_TENANT" ? "Nouveau" : "Oui"}
                       </span>
                     </li>
                   </ul>
                   
-                  {/* Hidden inputs to sync old properties fields if they are submitted */}
-                  <input type="hidden" name="isEligibleGLI" value={hasGli ? "true" : "false"} />
+                  {/* Hidden inputs to sync database properties */}
+                  <input type="hidden" name="hasGli" value={gliMode !== "NONE" ? "true" : "false"} />
+                  <input type="hidden" name="isEligibleGLI" value={gliMode !== "NONE" ? "true" : "false"} />
+                  <input type="hidden" name="gliMode" value={gliMode} />
+                  <input type="hidden" name="rentWithCharges" value={rentWithCharges} />
+                  <input type="hidden" name="gliMonthlyIncomeThreshold" value={gliMonthlyIncomeThreshold || ""} />
                   <input type="hidden" name="minSalaryRequired" value={gliMonthlyIncomeThreshold || ""} />
-                  <input type="hidden" name="studentPolicy" value={acceptsStudent ? "ACCEPTED" : "REFUSED"} />
+                  <input type="hidden" name="acceptsStudent" value={acceptsStudents ? "true" : "false"} />
+                  <input type="hidden" name="acceptsStudents" value={acceptsStudents ? "true" : "false"} />
+                  <input type="hidden" name="studentPolicy" value={acceptsStudents ? "ACCEPTED" : "REFUSED"} />
+                  <input type="hidden" name="acceptsGuarantor" value={acceptsGuarantors ? "true" : "false"} />
+                  <input type="hidden" name="acceptsGuarantors" value={acceptsGuarantors ? "true" : "false"} />
+                  <input type="hidden" name="acceptsColocation" value={acceptsColocation ? "true" : "false"} />
+                  <input type="hidden" name="acceptsUnstableProfiles" value={acceptsUnstableProfiles ? "true" : "false"} />
+                  <input type="hidden" name="tenantAlreadyInPlaceStatus" value={tenantAlreadyInPlaceStatus} />
+                  <input type="hidden" name="customDocumentInstructions" value={customDocumentInstructions || ""} />
+                  
+                  {/* Kept check fields from previous schema for fallback compatibility */}
+                  <input type="hidden" name="requiresCurrentAddressProof" value={requiresCurrentAddressProof ? "true" : "false"} />
+                  <input type="hidden" name="requiresEmploymentProof" value={requiresEmploymentProof ? "true" : "false"} />
+                  <input type="hidden" name="requiresIncomeProof" value={requiresIncomeProof ? "true" : "false"} />
+                  <input type="hidden" name="requiresTaxNotice" value={requiresTaxNotice ? "true" : "false"} />
+                  <input type="hidden" name="customInstructions" value={customInstructions || ""} />
                 </div>
               </div>
             </div>

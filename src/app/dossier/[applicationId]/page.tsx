@@ -29,8 +29,18 @@ export default async function DossierPage({
     where: { id: applicationId },
     include: {
       property: true,
-      candidate: true,
+      candidate: {
+        include: {
+          roommates: true,
+          guarantor: true,
+        }
+      },
       documents: true,
+      documentRequirements: {
+        include: {
+          documents: true,
+        }
+      }
     }
   });
 
@@ -55,12 +65,40 @@ export default async function DossierPage({
   }
 
   // --- ÉTAPE 4 : Dépôt documentaire dynamique ---
-  const EXPECTED_DOCUMENTS = generateDocumentRequirements(application.property, application.candidate);
+  let EXPECTED_DOCUMENTS = application.documentRequirements;
+
+  // Auto-generation fallback if DB is empty
+  if (EXPECTED_DOCUMENTS.length === 0) {
+    const reqDefs = generateDocumentRequirements(application.property, application.candidate);
+    for (const def of reqDefs) {
+      await prisma.documentRequirement.create({
+        data: {
+          applicationId,
+          key: def.key,
+          label: def.label,
+          description: def.description,
+          category: def.category,
+          required: def.required,
+          recommended: def.recommended,
+          appliesTo: def.appliesTo,
+          maxFiles: def.maxFiles,
+          status: "PENDING"
+        }
+      });
+    }
+    const reloaded = await prisma.application.findUnique({
+      where: { id: applicationId },
+      include: {
+        documentRequirements: { include: { documents: true } }
+      }
+    });
+    EXPECTED_DOCUMENTS = reloaded?.documentRequirements || [];
+  }
 
   // Calcul progression
-  const mandatoryDocs = EXPECTED_DOCUMENTS.filter(d => d.isRequired);
+  const mandatoryDocs = EXPECTED_DOCUMENTS.filter(d => d.required);
   const uploadedMandatory = mandatoryDocs.filter(d => 
-    application.documents.some(doc => doc.type === d.key)
+    application.documents.some(doc => doc.requirementId === d.id || doc.type === d.key)
   ).length;
   
   const progress = mandatoryDocs.length > 0 ? Math.round((uploadedMandatory / mandatoryDocs.length) * 100) : 100;
@@ -108,46 +146,22 @@ export default async function DossierPage({
 
   // Groupement des documents par catégorie
   const sections = [
-    { title: "Votre identité", icon: <User className="w-5 h-5 text-[#1463FF]" />, keys: ["candidate_identity"] },
-    { title: "Votre domicile", icon: <Home className="w-5 h-5 text-[#1463FF]" />, keys: ["candidate_domicile"] },
-    { 
-      title: "Votre situation professionnelle", 
-      icon: <GraduationCap className="w-5 h-5 text-[#1463FF]" />, 
-      keys: ["candidate_employment", "candidate_student_status", "candidate_status_proof"] 
-    },
-    { 
-      title: "Vos revenus", 
-      icon: <Coins className="w-5 h-5 text-[#1463FF]" />, 
-      keys: [
-        "candidate_income_payslips",
-        "candidate_income_payslip_1",
-        "candidate_income_payslip_2",
-        "candidate_income_payslip_3",
-        "candidate_income_self_employed",
-        "candidate_income_pension",
-        "candidate_income_student",
-        "candidate_income_other"
-      ] 
-    },
-    { title: "Votre avis d'imposition", icon: <FileText className="w-5 h-5 text-[#1463FF]" />, keys: ["candidate_tax_notice"] },
-    { 
-      title: "Documents du garant", 
-      icon: <Users className="w-5 h-5 text-[#1463FF]" />, 
-      keys: [
-        "guarantor_identity",
-        "guarantor_domicile",
-        "guarantor_employment",
-        "guarantor_income",
-        "guarantor_income_payslip_1",
-        "guarantor_income_payslip_2",
-        "guarantor_income_payslip_3",
-        "guarantor_tax_notice"
-      ] 
-    }
+    { title: "Votre identité", icon: <User className="w-5 h-5 text-[#1463FF]" />, category: "IDENTITY" },
+    { title: "Votre domicile", icon: <Home className="w-5 h-5 text-[#1463FF]" />, category: "DOMICILE" },
+    { title: "Votre situation", icon: <GraduationCap className="w-5 h-5 text-[#1463FF]" />, category: "EMPLOYMENT" },
+    { title: "Vos revenus", icon: <Coins className="w-5 h-5 text-[#1463FF]" />, category: "INCOME" },
+    { title: "Votre fiscalité", icon: <FileText className="w-5 h-5 text-[#1463FF]" />, category: "TAX" },
+    { title: "Documents du garant", icon: <Users className="w-5 h-5 text-[#1463FF]" />, appliesTo: "guarantor" },
+    { title: "Documents des colocataires", icon: <Users className="w-5 h-5 text-[#1463FF]" />, appliesTo: "roommate" }
   ];
 
   const renderedSections = sections.map(sec => {
-    const docs = EXPECTED_DOCUMENTS.filter(d => sec.keys.includes(d.key));
+    let docs;
+    if (sec.appliesTo) {
+      docs = EXPECTED_DOCUMENTS.filter(d => d.appliesTo === sec.appliesTo);
+    } else {
+      docs = EXPECTED_DOCUMENTS.filter(d => d.appliesTo === "candidate" && d.category === sec.category);
+    }
     return { ...sec, docs };
   }).filter(sec => sec.docs.length > 0);
 
@@ -274,7 +288,7 @@ export default async function DossierPage({
 
                     <div className="space-y-4">
                       {sec.docs.map(expectedDoc => {
-                        const uploadedDoc = application.documents.find(d => d.type === expectedDoc.key);
+                        const uploadedDoc = application.documents.find(d => d.requirementId === expectedDoc.id || d.type === expectedDoc.key);
                         const isRejected = uploadedDoc?.status === "REJECTED";
                         const isPending = uploadedDoc?.status === "PENDING";
                         const isValidated = uploadedDoc?.status === "VALIDATED";
@@ -305,7 +319,7 @@ export default async function DossierPage({
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <span className="font-bold text-slate-800">{expectedDoc.label}</span>
-                                    {expectedDoc.isOptional ? (
+                                    {!expectedDoc.required ? (
                                       <span className="text-[10px] text-slate-500 bg-white/60 border border-slate-200 px-2 py-0.5 rounded-full font-bold uppercase">Optionnel</span>
                                     ) : (
                                       <span className="text-[10px] text-[#1463FF] bg-[#1463FF]/10 border border-[#1463FF]/20 px-2 py-0.5 rounded-full font-bold uppercase">Obligatoire</span>
@@ -399,6 +413,33 @@ export default async function DossierPage({
               </div>
               <div className="p-6 space-y-6">
                 
+                {/* Solvency Warning if applicable */}
+                {(() => {
+                  const rentAmount = application.property.rentWithCharges || application.property.rent || 0;
+                  const candidateIncome = application.candidate.declaredMonthlyIncome || 0;
+                  const roommatesIncome = application.candidate.roommates?.reduce((sum: number, r: any) => sum + (r.declaredMonthlyIncome || 0), 0) || 0;
+                  const totalIncome = candidateIncome + roommatesIncome;
+                  const effortRate = totalIncome > 0 ? Math.round((rentAmount / totalIncome) * 100) : 0;
+                  const gliThreshold = application.property.gliMonthlyIncomeThreshold || Math.round(rentAmount * 3);
+                  const isUnderThreshold = totalIncome < gliThreshold;
+                  const isGliActive = application.property.gliMode === "STRICT" || application.property.gliMode === "INDICATIVE" || application.property.hasGli;
+
+                  if (isUnderThreshold && isGliActive) {
+                    return (
+                      <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 flex flex-col gap-1.5 shadow-sm">
+                        <div className="flex items-center gap-1.5">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span className="font-bold text-xs text-amber-900">Seuil indicatif non atteint</span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-amber-800">
+                          Votre revenu net global déclaré ({totalIncome} €) est inférieur au seuil indicatif conseillé pour ce logement ({gliThreshold} €). Vous pouvez finaliser votre dossier, mais il pourra faire l'objet d'une analyse complémentaire.
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
                 {/* 1. Candidat Info */}
                 <div className="space-y-2">
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Candidat</span>
@@ -415,7 +456,14 @@ export default async function DossierPage({
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                     <p className="font-bold text-slate-800 text-sm">{application.property.title}</p>
                     <p className="text-xs text-slate-500 mt-1">📍 {application.property.shortAddress}</p>
-                    <p className="text-primary font-extrabold text-lg mt-2">{application.property.rent} € <span className="text-xs font-medium text-slate-500">/ mois</span></p>
+                    <p className="text-[#092B5A] font-bold text-xs mt-2">
+                      Loyer : {application.property.rent} € / mois
+                    </p>
+                    {application.property.rentWithCharges > 0 && (
+                      <p className="text-primary font-extrabold text-sm mt-1">
+                        Charges comprises : {application.property.rentWithCharges} € / mois
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -424,36 +472,57 @@ export default async function DossierPage({
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Paramètres annonce</span>
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-xs space-y-2 font-medium text-slate-700">
                     <div className="flex justify-between">
-                      <span>GLI activée :</span>
-                      <span className="font-bold">{application.property.hasGli ? "Oui" : "Non"}</span>
+                      <span>GLI :</span>
+                      <span className="font-bold uppercase text-[10px] px-2 py-0.5 rounded bg-amber-100 text-amber-800">
+                        {application.property.gliMode !== "NONE" ? application.property.gliMode : "Non activée"}
+                      </span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Garants acceptés :</span>
-                      <span className="font-bold">{application.property.acceptsGuarantor ? "Oui" : "Non"}</span>
+                      <span>Garants :</span>
+                      <span className="font-bold">{application.property.acceptsGuarantor ? "Acceptés" : "Refusés"}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Étudiants acceptés :</span>
-                      <span className="font-bold">{application.property.acceptsStudent ? "Oui" : "Non"}</span>
+                      <span>Étudiants :</span>
+                      <span className="font-bold">{application.property.acceptsStudent ? "Acceptés" : "Refusés"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Colocation :</span>
+                      <span className="font-bold">{application.property.acceptsColocation ? "Acceptée" : "Refusée"}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* 4. Profil Déclaré */}
                 <div className="space-y-2">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Votre profil déclaré</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Votre situation</span>
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-xs space-y-2 font-medium text-slate-700">
                     <div className="flex justify-between">
                       <span>Activité :</span>
                       <span className="font-bold text-primary">{getStatusLabelFr(application.candidate.employmentStatus || "")}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Revenu mensuel :</span>
+                      <span>Votre revenu :</span>
                       <span className="font-bold">{application.candidate.declaredMonthlyIncome || 0} € / mois</span>
                     </div>
-                    {application.property.acceptsGuarantor && (
-                      <div className="flex justify-between">
-                        <span>Garant ajouté :</span>
-                        <span className="font-bold">{application.candidate.hasGuarantor ? "Oui" : "Non"}</span>
+                    {application.candidate.isColocation && application.candidate.roommates && application.candidate.roommates.length > 0 && (
+                      <div className="border-t pt-2 mt-2 space-y-1">
+                        <p className="font-bold text-slate-800 text-[10px] uppercase">Colocataires ({application.candidate.roommates.length}) :</p>
+                        {application.candidate.roommates.map((rm: any, i: number) => (
+                          <div key={i} className="flex justify-between text-[11px] text-slate-600 pl-2">
+                            <span>{rm.firstName} ({getStatusLabelFr(rm.employmentStatus || "")}) :</span>
+                            <span className="font-semibold">{rm.declaredMonthlyIncome || 0} €</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {application.candidate.hasGuarantor && application.candidate.guarantor && (
+                      <div className="border-t pt-2 mt-2 space-y-1 bg-white/50 p-2 rounded-xl">
+                        <p className="font-bold text-[#1463FF] text-[10px] uppercase">Garant :</p>
+                        <p className="text-[11px] font-semibold text-slate-700">{application.candidate.guarantor.firstName} {application.candidate.guarantor.lastName}</p>
+                        <div className="flex justify-between text-[10px] text-slate-500">
+                          <span>Revenu garant :</span>
+                          <span className="font-bold">{application.candidate.guarantor.declaredMonthlyIncome || 0} €/m</span>
+                        </div>
                       </div>
                     )}
                   </div>

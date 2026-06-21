@@ -6,7 +6,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import Link from "next/link";
-import { ChevronLeft, FileText, User, Calendar, MapPin, Download, History, MessageSquare, ShieldCheck, CheckCircle2, Clock, Sliders } from "lucide-react";
+import { ChevronLeft, FileText, User, Calendar, MapPin, Download, History, MessageSquare, ShieldCheck, CheckCircle2, Clock, Sliders, AlertTriangle, Landmark } from "lucide-react";
 import { StatusForm } from "./StatusForm";
 import { DocumentViewerModal } from "@/components/admin/DocumentViewerModal";
 import { ConfirmVisitSlotForm } from "@/components/admin/ConfirmVisitSlotForm";
@@ -21,8 +21,18 @@ export default async function AdminApplicationPage({
   const application = await prisma.application.findUnique({
     where: { id: applicationId },
     include: {
-      candidate: true,
+      candidate: {
+        include: {
+          roommates: true,
+          guarantor: true,
+        }
+      },
       property: true,
+      documentRequirements: {
+        include: {
+          documents: true,
+        }
+      },
       documents: {
         orderBy: { createdAt: "desc" }
       },
@@ -62,20 +72,20 @@ export default async function AdminApplicationPage({
   const isAnySlotBooked = application.visitSlots.some(s => s.status === "BOOKED");
 
   // Logic to compute dynamic requirements, completeness, and coherence metrics
-  const expectedDocs = generateDocumentRequirements(application.property, application.candidate);
+  const expectedDocs = application.documentRequirements;
   
-  const mandatoryDocs = expectedDocs.filter(d => d.isRequired);
+  const mandatoryDocs = expectedDocs.filter(d => d.required);
   const uploadedMandatoryCount = mandatoryDocs.filter(d => 
-    application.documents.some(doc => doc.type === d.key)
+    application.documents.some(doc => doc.requirementId === d.id || doc.type === d.key)
   ).length;
   
   const isComplet = uploadedMandatoryCount === mandatoryDocs.length;
   const isToVerify = application.documents.some(doc => doc.status === "PENDING");
   
-  const isStudentNotAccepted = (application.property.acceptsStudent === false || application.property.studentPolicy === "REFUSED") && application.candidate.employmentStatus === "STUDENT";
+  const isStudentNotAccepted = (application.property.acceptsStudents === false || application.property.studentPolicy === "REFUSED") && application.candidate.employmentStatus === "STUDENT";
   
   const rent = application.property.rent;
-  const hasGli = application.property.hasGli || application.property.isEligibleGLI || false;
+  const hasGli = application.property.gliMode !== "NONE" || application.property.hasGli || application.property.isEligibleGLI || false;
   const gliMonthlyIncomeThreshold = application.property.gliMonthlyIncomeThreshold || application.property.minSalaryRequired || (rent * 3);
   const declaredMonthlyIncome = application.candidate.declaredMonthlyIncome || 0;
   const isIncomeUnderThreshold = hasGli && declaredMonthlyIncome < gliMonthlyIncomeThreshold;
@@ -132,7 +142,7 @@ export default async function AdminApplicationPage({
             <CardContent className="pt-6">
               <div className="space-y-4">
                 {expectedDocs.map(expected => {
-                  const doc = application.documents.find(d => d.type === expected.key);
+                  const doc = application.documents.find(d => d.requirementId === expected.id || d.type === expected.key);
                   const isUploaded = !!doc;
                   
                   return (
@@ -145,7 +155,7 @@ export default async function AdminApplicationPage({
                             : doc.status === 'REJECTED' 
                               ? 'bg-red-50/30 border-red-200'
                               : 'bg-blue-50/20 border-blue-200'
-                          : expected.isRequired 
+                          : expected.required 
                             ? 'bg-slate-50 border-dashed border-slate-200' 
                             : 'bg-white border-dashed border-slate-200 opacity-60'
                       }`}
@@ -153,7 +163,7 @@ export default async function AdminApplicationPage({
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-sm text-slate-800">{expected.label}</span>
-                          {expected.isRequired ? (
+                          {expected.required ? (
                             <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
                               Requis
                             </span>
@@ -173,7 +183,7 @@ export default async function AdminApplicationPage({
                             </span>
                           ) : (
                             <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
-                              expected.isRequired ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'
+                              expected.required ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'
                             }`}>
                               Manquant
                             </span>
@@ -291,6 +301,165 @@ export default async function AdminApplicationPage({
               <StatusForm applicationId={applicationId} currentStatus={application.status} />
             </CardContent>
           </Card>
+
+          {/* Card Lecture GLI indicative */}
+          {(() => {
+            const rentWithCharges = application.property.rentWithCharges || application.property.rent || 0;
+            const candidateIncome = application.candidate.declaredMonthlyIncome || 0;
+            const roommatesIncome = application.candidate.roommates?.reduce((sum: number, r: any) => sum + (r.declaredMonthlyIncome || 0), 0) || 0;
+            const totalIncome = candidateIncome + roommatesIncome;
+            const effortRate = totalIncome > 0 ? Math.round((rentWithCharges / totalIncome) * 100) : 0;
+            const isStudent = application.candidate.employmentStatus === "STUDENT" || application.candidate.isStudentOrApprentice === true;
+            const hasGuarantor = application.candidate.hasGuarantor;
+            const isColocation = application.candidate.isColocation;
+            const gliMonthlyIncomeThreshold = application.property.gliMonthlyIncomeThreshold || Math.round(rentWithCharges * 3);
+            const hasGli = application.property.gliMode !== "NONE" || application.property.hasGli;
+
+            const missingDocs = expectedDocs.filter(d => d.required && !application.documents.some(doc => doc.requirementId === d.id || doc.type === d.key));
+            const isComplet = missingDocs.length === 0;
+
+            let targetThreshold = 37;
+            let profileEligible = true;
+            let eligibilityReason = "";
+
+            const status = application.candidate.employmentStatus || "OTHER";
+            if (status === "CDI") {
+              if (application.candidate.isInProbationPeriod) {
+                profileEligible = false;
+                eligibilityReason = "CDI en période d'essai.";
+              } else if (application.candidate.isCdiMobility) {
+                targetThreshold = 30;
+              }
+            } else if (status === "PUBLIC_SERVANT") {
+              targetThreshold = 37;
+            } else if (status === "SELF_EMPLOYED") {
+              targetThreshold = 33;
+              if (application.candidate.selfEmployedYears < 2) {
+                profileEligible = false;
+                eligibilityReason = "Indépendant depuis moins de 2 ans.";
+              }
+            } else if (status === "CDD") {
+              targetThreshold = 25;
+              if (application.candidate.cddRemainingMonths < 12) {
+                profileEligible = false;
+                eligibilityReason = "CDD restant inférieur à 12 mois.";
+              }
+            } else if (status === "RETIRED") {
+              targetThreshold = 37;
+            } else if (status === "STUDENT") {
+              targetThreshold = 37;
+              if (!application.property.acceptsStudents) {
+                profileEligible = false;
+                eligibilityReason = "Profil étudiant refusé par l'annonce.";
+              }
+            } else {
+              targetThreshold = 33;
+              if (!application.property.acceptsUnstableProfiles && !isColocation) {
+                profileEligible = false;
+                eligibilityReason = "Profil atypique non accepté par l'assurance standard.";
+              }
+            }
+
+            const isCompatible = (status === "STUDENT" ? hasGuarantor : true) && effortRate <= targetThreshold && profileEligible && isComplet;
+            const isToVerifyBadge = !isCompatible && effortRate <= 40 && profileEligible;
+            const isPotentiallyIneligible = !profileEligible || effortRate > 40 || (status === "STUDENT" && !hasGuarantor && hasGli);
+
+            return (
+              <Card className="border border-slate-200 shadow-md">
+                <CardHeader className="pb-3 border-b border-border bg-[#092B5A] text-white rounded-t-xl">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Landmark className="h-5 w-5 text-[#1463FF]" /> Lecture GLI indicative
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4 space-y-4 text-sm">
+                  <div className="flex flex-wrap gap-1.5 pb-2 border-b">
+                    {isCompatible && (
+                      <Badge className="bg-green-100 hover:bg-green-100 text-green-800 border border-green-200 text-[10px]">Compatible à première vue</Badge>
+                    )}
+                    {isToVerifyBadge && (
+                      <Badge className="bg-blue-100 hover:bg-blue-100 text-blue-800 border border-blue-200 text-[10px]">À vérifier</Badge>
+                    )}
+                    {isPotentiallyIneligible && (
+                      <Badge className="bg-amber-100 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[10px]">Profil potentiellement non éligible GLI</Badge>
+                    )}
+                    {!isComplet && (
+                      <Badge className="bg-orange-100 hover:bg-orange-100 text-orange-800 border border-orange-200 text-[10px]">Documents incomplets ({missingDocs.length})</Badge>
+                    )}
+                    {hasGuarantor && (
+                      <Badge className="bg-purple-100 hover:bg-purple-100 text-purple-800 border border-purple-200 text-[10px]">Garant présent</Badge>
+                    )}
+                    {hasGli && hasGuarantor && status !== "STUDENT" && (
+                      <Badge className="bg-red-100 hover:bg-red-100 text-red-800 border border-red-200 text-[10px]">Caution non applicable GLI</Badge>
+                    )}
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <div className="flex justify-between pb-1.5 border-b border-slate-100">
+                      <span className="text-slate-500 font-medium">Profil candidat :</span>
+                      <span className="font-bold text-slate-800">
+                        {getStatusLabelFr(status)} {application.candidate.isInProbationPeriod ? "(période d'essai)" : ""}
+                      </span>
+                    </div>
+                    <div className="flex justify-between pb-1.5 border-b border-slate-100">
+                      <span className="text-slate-500 font-medium">Revenu net global :</span>
+                      <span className="font-bold text-slate-800">{totalIncome} € / mois</span>
+                    </div>
+                    <div className="flex justify-between pb-1.5 border-b border-slate-100">
+                      <span className="text-slate-500 font-medium">Loyer CC :</span>
+                      <span className="font-bold text-[#092B5A]">{rentWithCharges} € / mois</span>
+                    </div>
+                    <div className="flex justify-between pb-1.5 border-b border-slate-100">
+                      <span className="text-slate-500 font-medium">Taux d'effort calculé :</span>
+                      <span className={`font-extrabold ${effortRate <= targetThreshold ? 'text-green-600' : 'text-amber-600'}`}>
+                        {effortRate} %
+                      </span>
+                    </div>
+                    <div className="flex justify-between pb-1.5 border-b border-slate-100">
+                      <span className="text-slate-500 font-medium">Seuil conseillé (GLI) :</span>
+                      <span className="font-bold text-slate-800">{targetThreshold} %</span>
+                    </div>
+                    <div className="flex justify-between pb-1.5 border-b border-slate-100">
+                      <span className="text-slate-500 font-medium">Colocation :</span>
+                      <span className="font-semibold text-slate-800">{isColocation ? `Oui (${application.candidate.roommates.length} colocataires)` : "Non"}</span>
+                    </div>
+                    <div className="flex justify-between pb-1.5 border-b border-slate-100">
+                      <span className="text-slate-500 font-medium">Garant :</span>
+                      <span className="font-semibold text-slate-800">
+                        {hasGuarantor ? `Oui (${application.candidate.guarantor.firstName} ${application.candidate.guarantor.lastName})` : "Non"}
+                      </span>
+                    </div>
+
+                    {!isComplet && (
+                      <div className="p-3 bg-orange-50 text-orange-950 border border-orange-200 rounded-xl space-y-1.5 mt-2">
+                        <span className="font-bold text-xs uppercase block text-orange-850">Documents obligatoires manquants :</span>
+                        <ul className="list-disc pl-4 text-xs text-orange-800 space-y-0.5">
+                          {missingDocs.map((d: any) => (
+                            <li key={d.key}>{d.label}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {hasGli && hasGuarantor && status !== "STUDENT" && (
+                      <div className="p-3 bg-red-50 text-red-950 border border-red-200 rounded-xl mt-2 text-xs">
+                        ⚠️ Les contrats GLI interdisent généralement le recours au garant pour les candidats non-étudiants.
+                      </div>
+                    )}
+
+                    {eligibilityReason && (
+                      <div className="p-3 bg-amber-50 text-amber-950 border border-amber-200 rounded-xl mt-2 text-xs">
+                        ⚠️ <strong>Non-conformité GLI :</strong> {eligibilityReason}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-2 mt-4 text-[10px] text-slate-400 italic text-center border-t leading-relaxed">
+                    Cette analyse est indicative. La décision finale dépend du propriétaire et, le cas échéant, de l’assureur.
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {/* Card Cohérence du dossier */}
           <Card className="border border-slate-200 shadow-md">

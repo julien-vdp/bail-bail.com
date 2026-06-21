@@ -42,6 +42,16 @@ model Property {
   requiresEmploymentProof    Boolean  @default(true)
   requiresIncomeProof        Boolean  @default(true)
   customInstructions         String?
+
+  // Nouveaux paramètres moteur conditionnel GLI
+  rentWithCharges             Float    @default(0.0)
+  gliMode                     String   @default("NONE") // NONE, INDICATIVE, STRICT
+  acceptsStudents             Boolean  @default(true)
+  acceptsGuarantors           Boolean  @default(true)
+  acceptsColocation           Boolean  @default(false)
+  acceptsUnstableProfiles     Boolean  @default(false)
+  tenantAlreadyInPlaceStatus  String   @default("NEW_TENANT") // NEW_TENANT, IN_PLACE_LESS_THAN_6_MONTHS, IN_PLACE_MORE_THAN_6_MONTHS
+  customDocumentInstructions  String?
   
   ownerId            String?
   owner        User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
@@ -88,10 +98,42 @@ model Candidate {
   hasGuarantor          Boolean  @default(false)
   declaredMonthlyIncome Float?
 
+  // Nouveaux champs moteur conditionnel GLI
+  isInProbationPeriod   Boolean?  @default(false)
+  cddRemainingMonths    Int?
+  selfEmployedYears     Float?
+  isStudentOrApprentice Boolean?  @default(false)
+  isColocation          Boolean   @default(false)
+  isApprentice          Boolean?  @default(false)
+  roommatesCount        Int?      @default(0)
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   applications Application[]
+  guarantor    Guarantor?
+  roommates    Roommate[]
+}
+
+model Guarantor {
+  id                    String    @id @default(uuid())
+  candidateId           String    @unique
+  candidate             Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  firstName             String
+  lastName              String
+  employmentStatus      String?
+  declaredMonthlyIncome Float?
+  fiscalResidenceInFrance Boolean  @default(true)
+}
+
+model Roommate {
+  id                    String    @id @default(uuid())
+  candidateId           String
+  candidate             Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  firstName             String
+  lastName              String
+  employmentStatus      String?
+  declaredMonthlyIncome Float?
 }
 
 model Application {
@@ -106,9 +148,27 @@ model Application {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  documents  Document[]
-  visitSlots VisitSlot[]
-  auditLogs  AuditLog[]
+  documents            Document[]
+  visitSlots           VisitSlot[]
+  auditLogs            AuditLog[]
+  documentRequirements DocumentRequirement[]
+}
+
+model DocumentRequirement {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  key           String
+  label         String
+  description   String
+  category      String
+  required      Boolean     @default(true)
+  recommended   Boolean     @default(false)
+  appliesTo     String      @default("candidate") // candidate, guarantor, roommate
+  status        String      @default("PENDING")   // PENDING, UPLOADED, VALIDATED, REJECTED
+  maxFiles      Int         @default(1)
+  
+  documents     Document[]
 }
 
 model Document {
@@ -128,6 +188,9 @@ model Document {
   // Validation candidat
   candidateApproved Boolean   @default(false)
   candidateComment  String?
+
+  requirementId     String?
+  requirement       DocumentRequirement? @relation(fields: [requirementId], references: [id], onDelete: Cascade)
 }
 
 model AuditLog {

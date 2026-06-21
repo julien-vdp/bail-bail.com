@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { generateDocumentRequirements } from "@/lib/documentRequirements";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth";
@@ -445,6 +446,22 @@ const SaveProfileSchema = z.object({
   employmentStatus: z.string().min(1, "Veuillez indiquer votre situation professionnelle"),
   declaredMonthlyIncome: z.coerce.number().min(0, "Le revenu mensuel déclaré doit être supérieur ou égal à 0"),
   hasGuarantor: z.boolean().default(false),
+  
+  isInProbationPeriod: z.boolean().optional().nullable(),
+  cddRemainingMonths: z.coerce.number().optional().nullable(),
+  selfEmployedYears: z.coerce.number().optional().nullable(),
+  isStudentOrApprentice: z.boolean().optional().nullable(),
+  isApprentice: z.boolean().optional().nullable(),
+  isColocation: z.boolean().default(false),
+  roommatesCount: z.coerce.number().default(0),
+
+  roommatesJson: z.string().optional().nullable(),
+  
+  guarantorFirstName: z.string().optional().nullable(),
+  guarantorLastName: z.string().optional().nullable(),
+  guarantorEmploymentStatus: z.string().optional().nullable(),
+  guarantorDeclaredMonthlyIncome: z.coerce.number().optional().nullable(),
+  guarantorFiscalResidenceInFrance: z.boolean().default(true),
 });
 
 export async function saveCandidateProfileAction(prevState: any, formData: FormData) {
@@ -462,6 +479,22 @@ export async function saveCandidateProfileAction(prevState: any, formData: FormD
     employmentStatus: formData.get("employmentStatus"),
     declaredMonthlyIncome: formData.get("declaredMonthlyIncome"),
     hasGuarantor: formData.get("hasGuarantor") === "true",
+    
+    isInProbationPeriod: formData.get("isInProbationPeriod") === "true",
+    cddRemainingMonths: formData.get("cddRemainingMonths") ? Number(formData.get("cddRemainingMonths")) : null,
+    selfEmployedYears: formData.get("selfEmployedYears") ? Number(formData.get("selfEmployedYears")) : null,
+    isStudentOrApprentice: formData.get("isStudentOrApprentice") === "true" || formData.get("employmentStatus") === "STUDENT",
+    isApprentice: formData.get("isApprentice") === "true",
+    isColocation: formData.get("isColocation") === "true",
+    roommatesCount: formData.get("roommatesCount") ? Number(formData.get("roommatesCount")) : 0,
+
+    roommatesJson: formData.get("roommatesJson"),
+    
+    guarantorFirstName: formData.get("guarantorFirstName"),
+    guarantorLastName: formData.get("guarantorLastName"),
+    guarantorEmploymentStatus: formData.get("guarantorEmploymentStatus"),
+    guarantorDeclaredMonthlyIncome: formData.get("guarantorDeclaredMonthlyIncome") ? Number(formData.get("guarantorDeclaredMonthlyIncome")) : null,
+    guarantorFiscalResidenceInFrance: formData.get("guarantorFiscalResidenceInFrance") !== "false",
   });
 
   if (!parsed.success) {
@@ -477,6 +510,19 @@ export async function saveCandidateProfileAction(prevState: any, formData: FormD
     employmentStatus,
     declaredMonthlyIncome,
     hasGuarantor,
+    isInProbationPeriod,
+    cddRemainingMonths,
+    selfEmployedYears,
+    isStudentOrApprentice,
+    isApprentice,
+    isColocation,
+    roommatesCount,
+    roommatesJson,
+    guarantorFirstName,
+    guarantorLastName,
+    guarantorEmploymentStatus,
+    guarantorDeclaredMonthlyIncome,
+    guarantorFiscalResidenceInFrance,
   } = parsed.data;
 
   try {
@@ -503,17 +549,156 @@ export async function saveCandidateProfileAction(prevState: any, formData: FormD
         employmentStatus,
         declaredMonthlyIncome,
         hasGuarantor,
+        isInProbationPeriod,
+        cddRemainingMonths,
+        selfEmployedYears,
+        isStudentOrApprentice,
+        isApprentice,
+        isColocation,
+        roommatesCount,
       }
     });
 
     // Sync isStudent on application
-    const isStudent = employmentStatus === "STUDENT";
+    const isStudent = employmentStatus === "STUDENT" || isStudentOrApprentice === true;
     await prisma.application.update({
       where: { id: applicationId },
       data: {
         isStudent,
       }
     });
+
+    // Supprimer les anciens colocataires et garants
+    await prisma.roommate.deleteMany({ where: { candidateId: application.candidateId } });
+    await prisma.guarantor.deleteMany({ where: { candidateId: application.candidateId } });
+
+    // Créer le garant si hasGuarantor est vrai
+    if (hasGuarantor && guarantorFirstName && guarantorLastName) {
+      await prisma.guarantor.create({
+        data: {
+          candidateId: application.candidateId,
+          firstName: guarantorFirstName,
+          lastName: guarantorLastName,
+          employmentStatus: guarantorEmploymentStatus || "CDI",
+          declaredMonthlyIncome: guarantorDeclaredMonthlyIncome || 0,
+          fiscalResidenceInFrance: guarantorFiscalResidenceInFrance,
+        }
+      });
+    }
+
+    // Créer les colocataires
+    if (isColocation && roommatesJson) {
+      try {
+        const roommatesList = JSON.parse(roommatesJson);
+        if (Array.isArray(roommatesList)) {
+          await prisma.roommate.createMany({
+            data: roommatesList.map((roommate: any) => ({
+              candidateId: application.candidateId,
+              firstName: roommate.firstName || "",
+              lastName: roommate.lastName || "",
+              employmentStatus: roommate.employmentStatus || "CDI",
+              declaredMonthlyIncome: Number(roommate.declaredMonthlyIncome || 0),
+            }))
+          });
+        }
+      } catch (e) {
+        console.error("Error parsing roommatesJson:", e);
+      }
+    }
+
+    // Fetch full updated candidate with roommates and guarantor
+    const candidateData = await prisma.candidate.findUnique({
+      where: { id: application.candidateId },
+      include: { roommates: true, guarantor: true }
+    });
+
+    // Générer les nouvelles exigences
+    const reqDefs = generateDocumentRequirements(application.property, candidateData);
+
+    // Detach and clean up requirements
+    const currentReqKeys = reqDefs.map(r => r.key);
+    
+    // Rendre null requirementId pour les documents dont l'exigence va disparaître
+    await prisma.document.updateMany({
+      where: { 
+        applicationId, 
+        requirement: { 
+          key: { notIn: currentReqKeys } 
+        } 
+      },
+      data: { requirementId: null }
+    });
+
+    // Supprimer les exigences devenues obsolètes
+    await prisma.documentRequirement.deleteMany({
+      where: { 
+        applicationId, 
+        key: { notIn: currentReqKeys } 
+      }
+    });
+
+    // Insérer / Mettre à jour les exigences actuelles
+    for (const def of reqDefs) {
+      const existing = await prisma.documentRequirement.findFirst({
+        where: { applicationId, key: def.key }
+      });
+
+      if (existing) {
+        await prisma.documentRequirement.update({
+          where: { id: existing.id },
+          data: {
+            label: def.label,
+            description: def.description,
+            category: def.category,
+            required: def.required,
+            recommended: def.recommended,
+            appliesTo: def.appliesTo,
+            maxFiles: def.maxFiles,
+          }
+        });
+      } else {
+        await prisma.documentRequirement.create({
+          data: {
+            applicationId,
+            key: def.key,
+            label: def.label,
+            description: def.description,
+            category: def.category,
+            required: def.required,
+            recommended: def.recommended,
+            appliesTo: def.appliesTo,
+            maxFiles: def.maxFiles,
+            status: "PENDING"
+          }
+        });
+      }
+    }
+
+    // Réassocier les documents existants par rapport aux nouvelles exigences en DB
+    const allRequirements = await prisma.documentRequirement.findMany({
+      where: { applicationId }
+    });
+    const allDocuments = await prisma.document.findMany({
+      where: { applicationId }
+    });
+
+    for (const doc of allDocuments) {
+      const req = allRequirements.find(r => {
+        if (r.key === "candidate_identity" && doc.type === "IDENTITY") return true;
+        if (r.key === "candidate_domicile" && doc.type === "DOMICILE") return true;
+        if (r.key.includes("income") && doc.type === "INCOME") return true;
+        if (r.key.includes("employment") && doc.type === "EMPLOYMENT") return true;
+        if (r.key.includes("tax") && doc.type === "TAX") return true;
+        if (r.key.includes("guarantor") && doc.type === "GUARANTOR") return true;
+        return false;
+      });
+      if (req && doc.requirementId !== req.id) {
+        await prisma.document.update({
+          where: { id: doc.id },
+          data: { requirementId: req.id }
+        });
+      }
+    }
 
     await prisma.auditLog.create({
       data: {
