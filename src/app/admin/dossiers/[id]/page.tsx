@@ -6,7 +6,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import Link from "next/link";
-import { ChevronLeft, FileText, User, Calendar, MapPin, Download, History, MessageSquare, ShieldCheck, CheckCircle2, Clock, Sliders, AlertTriangle, Landmark } from "lucide-react";
+import { ChevronLeft, FileText, User, Users, Calendar, MapPin, Download, History, MessageSquare, ShieldCheck, CheckCircle2, Clock, Sliders, AlertTriangle, Landmark } from "lucide-react";
 import { StatusForm } from "./StatusForm";
 import { DocumentViewerModal } from "@/components/admin/DocumentViewerModal";
 import { ConfirmVisitSlotForm } from "@/components/admin/ConfirmVisitSlotForm";
@@ -14,8 +14,10 @@ import { generateDocumentRequirements } from "@/lib/documentRequirements";
 
 export default async function AdminApplicationPage({
   params,
+  searchParams,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const applicationId = (await params).id;
   const application = await prisma.application.findUnique({
@@ -90,6 +92,21 @@ export default async function AdminApplicationPage({
 
   const expectedDocs = reloadedApp?.documentRequirements || [];
   
+  const searchParamsResolved = await searchParams;
+  const activeTab = (searchParamsResolved?.tab as string) || "locataire1";
+  const isRoommateTab = activeTab.startsWith("roommate_");
+
+  let filteredExpectedDocs = expectedDocs;
+  if (activeTab === "locataire1") {
+    filteredExpectedDocs = expectedDocs.filter(d => d.appliesTo === "candidate");
+  } else if (activeTab === "garant") {
+    filteredExpectedDocs = expectedDocs.filter(d => d.appliesTo === "guarantor");
+  } else if (isRoommateTab) {
+    filteredExpectedDocs = expectedDocs.filter(d => d.appliesTo === "roommate" && d.key.startsWith(activeTab));
+  } else {
+    filteredExpectedDocs = [];
+  }
+  
   const mandatoryDocs = expectedDocs.filter(d => d.required);
   const uploadedMandatoryCount = mandatoryDocs.filter(d => 
     application.documents.some(doc => doc.requirementId === d.id || doc.type === d.key)
@@ -155,9 +172,65 @@ export default async function AdminApplicationPage({
                 Checklist documentaire dynamique ({application.documents.length} pièces déposées)
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 space-y-6">
+              
+              {/* Tab Switcher for Admin/Owner */}
+              {(application.candidate.isColocation || application.candidate.hasGuarantor) && (
+                <div className="flex flex-wrap p-1 bg-slate-100 rounded-2xl border border-slate-200 gap-1">
+                  <Link
+                    href={`/admin/dossiers/${application.id}?tab=locataire1`}
+                    className={`flex-1 py-2.5 px-4 text-center text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap min-w-[140px] ${
+                      activeTab === "locataire1"
+                        ? "bg-white text-primary shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    <User className="w-4 h-4 text-primary shrink-0" />
+                    <span>Locataire 1 : {application.candidate.firstName} {application.candidate.lastName}</span>
+                  </Link>
+
+                  {application.candidate.isColocation && application.candidate.roommates?.map((roommate: any, index: number) => {
+                    const tabKey = `roommate_${roommate.id || index + 1}`;
+                    return (
+                      <Link
+                        key={roommate.id || index}
+                        href={`/admin/dossiers/${application.id}?tab=${tabKey}`}
+                        className={`flex-1 py-2.5 px-4 text-center text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap min-w-[140px] ${
+                          activeTab === tabKey
+                            ? "bg-white text-primary shadow-sm"
+                            : "text-slate-500 hover:text-slate-700"
+                        }`}
+                      >
+                        <Users className="w-4 h-4 text-primary shrink-0" />
+                        <span>Locataire {index + 2} : {roommate.firstName} {roommate.lastName}</span>
+                      </Link>
+                    );
+                  })}
+
+                  {application.candidate.hasGuarantor && application.candidate.guarantor && (
+                    <Link
+                      href={`/admin/dossiers/${application.id}?tab=garant`}
+                      className={`flex-1 py-2.5 px-4 text-center text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap min-w-[140px] ${
+                        activeTab === "garant"
+                          ? "bg-white text-primary shadow-sm"
+                          : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
+                      <span>Garant : {application.candidate.guarantor.firstName} {application.candidate.guarantor.lastName}</span>
+                    </Link>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "garant" && (
+                <p className="text-xs text-slate-500 bg-amber-50/50 border border-amber-100 p-3 rounded-xl leading-relaxed italic">
+                  Note : Les contrats GLI interdisent généralement le recours au garant pour les candidats non-étudiants.
+                </p>
+              )}
+
               <div className="space-y-4">
-                {expectedDocs.map(expected => {
+                {filteredExpectedDocs.map(expected => {
                   const doc = application.documents.find(d => d.requirementId === expected.id || d.type === expected.key);
                   const isUploaded = !!doc;
                   

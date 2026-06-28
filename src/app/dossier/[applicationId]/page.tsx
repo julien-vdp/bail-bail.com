@@ -146,25 +146,39 @@ export default async function DossierPage({
     );
   }
 
+  // activeTab calculation
+  const activeTab = (searchParamsResolved?.tab as string) || "locataire1";
+  const isRoommateTab = activeTab.startsWith("roommate_");
+
+  // Filter expected documents based on active tab
+  let filteredDocs = EXPECTED_DOCUMENTS;
+  if (activeTab === "locataire1") {
+    filteredDocs = EXPECTED_DOCUMENTS.filter(d => d.appliesTo === "candidate");
+  } else if (activeTab === "garant") {
+    filteredDocs = EXPECTED_DOCUMENTS.filter(d => d.appliesTo === "guarantor");
+  } else if (isRoommateTab) {
+    filteredDocs = EXPECTED_DOCUMENTS.filter(d => d.appliesTo === "roommate" && d.key.startsWith(activeTab));
+  } else {
+    filteredDocs = [];
+  }
+
   // Groupement des documents par catégorie
-  const sections = [
-    { title: "Votre identité", icon: <User className="w-5 h-5 text-[#1463FF]" />, category: "IDENTITY" },
-    { title: "Votre domicile", icon: <Home className="w-5 h-5 text-[#1463FF]" />, category: "DOMICILE" },
-    { title: "Votre situation", icon: <GraduationCap className="w-5 h-5 text-[#1463FF]" />, category: "EMPLOYMENT" },
-    { title: "Vos revenus", icon: <Coins className="w-5 h-5 text-[#1463FF]" />, category: "INCOME" },
-    { title: "Votre fiscalité", icon: <FileText className="w-5 h-5 text-[#1463FF]" />, category: "TAX" },
-    { title: "Documents du garant", icon: <Users className="w-5 h-5 text-[#1463FF]" />, appliesTo: "guarantor" },
-    { title: "Documents des colocataires", icon: <Users className="w-5 h-5 text-[#1463FF]" />, appliesTo: "roommate" }
+  const categories = [
+    { title: "Identité", icon: <User className="w-5 h-5 text-[#1463FF]" />, category: "IDENTITY" },
+    { title: "Domicile", icon: <Home className="w-5 h-5 text-[#1463FF]" />, category: "DOMICILE" },
+    { title: "Situation professionnelle", icon: <GraduationCap className="w-5 h-5 text-[#1463FF]" />, category: "EMPLOYMENT" },
+    { title: "Revenus", icon: <Coins className="w-5 h-5 text-[#1463FF]" />, category: "INCOME" },
+    { title: "Fiscalité", icon: <FileText className="w-5 h-5 text-[#1463FF]" />, category: "TAX" },
+    { title: "Autres pièces", icon: <FileText className="w-5 h-5 text-[#1463FF]" />, category: "OTHER" }
   ];
 
-  const renderedSections = sections.map(sec => {
-    let docs;
-    if (sec.appliesTo) {
-      docs = EXPECTED_DOCUMENTS.filter(d => d.appliesTo === sec.appliesTo);
-    } else {
-      docs = EXPECTED_DOCUMENTS.filter(d => d.appliesTo === "candidate" && d.category === sec.category);
-    }
-    return { ...sec, docs };
+  const renderedSections = categories.map(cat => {
+    const docs = filteredDocs.filter(d => {
+      if (d.category === cat.category) return true;
+      if (d.category === `GUARANTOR_${cat.category}`) return true;
+      return false;
+    });
+    return { ...cat, docs };
   }).filter(sec => sec.docs.length > 0);
 
   const getStatusLabelFr = (status: string) => {
@@ -274,6 +288,61 @@ export default async function DossierPage({
                   </div>
                 )}
               </div>
+
+              {/* Tab Switcher (uniquement s'il y a des colocataires ou un garant pour séparer proprement) */}
+              {(application.candidate.isColocation || application.candidate.hasGuarantor) && (
+                <div className="flex flex-wrap p-1 bg-slate-100 rounded-2xl border border-slate-200 gap-1">
+                  <Link
+                    href={`/dossier/${application.id}?tab=locataire1`}
+                    className={`flex-1 py-3 px-4 text-center text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap min-w-[150px] ${
+                      activeTab === "locataire1"
+                        ? "bg-white text-primary shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    <User className="w-4 h-4 text-primary shrink-0" />
+                    <span>Locataire 1 : {application.candidate.firstName} (Vous)</span>
+                  </Link>
+
+                  {application.candidate.isColocation && application.candidate.roommates?.map((roommate: any, index: number) => {
+                    const tabKey = `roommate_${roommate.id || index + 1}`;
+                    return (
+                      <Link
+                        key={roommate.id || index}
+                        href={`/dossier/${application.id}?tab=${tabKey}`}
+                        className={`flex-1 py-3 px-4 text-center text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap min-w-[150px] ${
+                          activeTab === tabKey
+                            ? "bg-white text-primary shadow-sm"
+                            : "text-slate-500 hover:text-slate-700"
+                        }`}
+                      >
+                        <Users className="w-4 h-4 text-primary shrink-0" />
+                        <span>Locataire {index + 2} : {roommate.firstName} {roommate.lastName}</span>
+                      </Link>
+                    );
+                  })}
+
+                  {application.candidate.hasGuarantor && application.candidate.guarantor && (
+                    <Link
+                      href={`/dossier/${application.id}?tab=garant`}
+                      className={`flex-1 py-3 px-4 text-center text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap min-w-[150px] ${
+                        activeTab === "garant"
+                          ? "bg-white text-primary shadow-sm"
+                          : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
+                      <span>Garant : {application.candidate.guarantor.firstName} {application.candidate.guarantor.lastName}</span>
+                    </Link>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "garant" && (
+                <p className="text-xs text-slate-500 bg-slate-50 border p-3 rounded-xl leading-relaxed italic">
+                  Selon les règles de certaines assurances, un garant ne remplace pas toujours le critère de revenus du candidat. Les pièces du garant peuvent néanmoins être utiles si l'annonce les accepte.
+                </p>
+              )}
               
               <div className="space-y-10">
                 {renderedSections.map(sec => (
@@ -283,11 +352,7 @@ export default async function DossierPage({
                       <span>{sec.title}</span>
                     </h3>
                     
-                    {sec.title === "Documents du garant" && (
-                      <p className="text-xs text-slate-500 bg-slate-50 border p-3 rounded-xl leading-relaxed italic">
-                        Selon les règles de certaines assurances, un garant ne remplace pas toujours le critère de revenus du candidat. Les pièces du garant peuvent néanmoins être utiles si l'annonce les accepte.
-                      </p>
-                    )}
+
 
                     <div className="space-y-4">
                       {sec.docs.map(expectedDoc => {

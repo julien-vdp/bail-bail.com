@@ -646,12 +646,39 @@ export async function syncDocumentRequirements(
 
   for (const doc of allDocuments) {
     const req = allRequirements.find(r => {
-      if (r.key === "candidate_identity" && doc.type === "IDENTITY") return true;
-      if (r.key === "candidate_domicile" && doc.type === "DOMICILE") return true;
-      if (r.key.includes("income") && doc.type === "INCOME") return true;
-      if (r.key.includes("employment") && doc.type === "EMPLOYMENT") return true;
-      if (r.key.includes("tax") && doc.type === "TAX") return true;
-      if (r.key.includes("guarantor") && doc.type === "GUARANTOR") return true;
+      // 1. Match by exact key if type holds the requirement key
+      if (r.key === doc.type) return true;
+
+      // 2. Fallbacks for category matching, strictly scoped:
+      const docTypeLower = doc.type.toLowerCase();
+      
+      // Candidate scope
+      if (r.appliesTo === "candidate") {
+        if (r.key === "candidate_identity" && doc.type === "IDENTITY") return true;
+        if (r.key === "candidate_domicile" && doc.type === "DOMICILE") return true;
+        if (r.key.includes("income") && doc.type === "INCOME" && !docTypeLower.includes("roommate") && !docTypeLower.includes("guarantor")) return true;
+        if (r.key.includes("employment") && doc.type === "EMPLOYMENT" && !docTypeLower.includes("roommate") && !docTypeLower.includes("guarantor")) return true;
+        if (r.key.includes("tax") && doc.type === "TAX" && !docTypeLower.includes("roommate") && !docTypeLower.includes("guarantor")) return true;
+      }
+      // Roommate scope
+      if (r.appliesTo === "roommate") {
+        const rPrefix = r.key.split('_').slice(0, 2).join('_'); // e.g. "roommate_1"
+        if (doc.type.startsWith(rPrefix)) {
+          if (r.key.includes("identity") && doc.type.includes("identity")) return true;
+          if (r.key.includes("domicile") && doc.type.includes("domicile")) return true;
+          if (r.key.includes("income") && doc.type.includes("income")) return true;
+          if (r.key.includes("employment") && doc.type.includes("employment")) return true;
+          if (r.key.includes("tax") && doc.type.includes("tax")) return true;
+        }
+      }
+      // Guarantor scope
+      if (r.appliesTo === "guarantor") {
+        if (r.key === "guarantor_identity" && doc.type === "GUARANTOR_IDENTITY") return true;
+        if (r.key === "guarantor_domicile" && doc.type === "GUARANTOR_DOMICILE") return true;
+        if (r.key.includes("income") && doc.type === "GUARANTOR_INCOME") return true;
+        if (r.key.includes("employment") && doc.type === "GUARANTOR_EMPLOYMENT") return true;
+        if (r.key.includes("tax") && doc.type === "GUARANTOR_TAX") return true;
+      }
       return false;
     });
     if (req && doc.requirementId !== req.id) {
