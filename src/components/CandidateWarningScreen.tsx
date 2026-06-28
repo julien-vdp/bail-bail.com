@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { acceptConditionsAction } from "@/actions/candidate";
 import { Button } from "@/components/ui/button";
-import { Loader2, Info, GraduationCap, Lightbulb } from "lucide-react";
+import { Loader2, Info, GraduationCap, Lightbulb, Users } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 
@@ -79,6 +79,7 @@ export function CandidateWarningScreen({
 }) {
   const [state, formAction, isPending] = useActionState(acceptConditionsAction, null);
   const [isStudentCheckbox, setIsStudentCheckbox] = useState(false);
+  const [signatairesCount, setSignatairesCount] = useState<1 | 2>(1);
   
   const hasGli = property.hasGli || property.isEligibleGLI;
   const requiredIncome = property.gliMonthlyIncomeThreshold || property.minSalaryRequired || (property.rent * 3);
@@ -203,12 +204,117 @@ export function CandidateWarningScreen({
               </label>
             </div>
           )}
-
           {/* 8. Action Buttons Form */}
           <form action={formAction} className="pt-4 border-t border-slate-100 space-y-6">
             <input type="hidden" name="applicationId" value={applicationId} />
             <input type="hidden" name="isStudent" value={isStudentToSubmit.toString()} />
-            
+            <input type="hidden" name="isColocation" value={(signatairesCount === 2).toString()} />
+
+            {!isOnlyStudents && !isRefusedStudents && (
+              <div className="flex items-center space-x-3 p-4 bg-[#F8FAFC] rounded-2xl border border-slate-100">
+                <Checkbox 
+                  id="isStudentCheckbox" 
+                  checked={isStudentCheckbox}
+                  onCheckedChange={(c) => setIsStudentCheckbox(c === true)}
+                />
+                <label htmlFor="isStudentCheckbox" className="text-xs md:text-sm font-semibold text-[#092B5A] leading-none cursor-pointer select-none">
+                  🎓 Je suis actuellement étudiant(e)
+                </label>
+              </div>
+            )}
+
+            {/* Question Colocation */}
+            <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-5 space-y-4 text-left">
+              <h4 className="text-[#092B5A] font-extrabold text-sm uppercase tracking-wider border-b pb-2 flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" /> Signature du bail
+              </h4>
+              <div className="space-y-3">
+                <label className="block text-xs font-bold text-slate-600">Combien serez-vous de locataires à signer le contrat de bail ?</label>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSignatairesCount(1)}
+                    className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-2 ${
+                      signatairesCount === 1 
+                        ? "bg-[#092B5A] text-white border-[#092B5A] shadow-md" 
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    👤 Un seul locataire (Seul)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSignatairesCount(2)}
+                    className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-2 ${
+                      signatairesCount === 2 
+                        ? "bg-[#1463FF] text-white border-[#1463FF] shadow-md" 
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    👥 Deux locataires (Colocation)
+                  </button>
+                </div>
+              </div>
+
+              {signatairesCount === 2 && (
+                <div className="space-y-4 pt-4 border-t border-slate-200 animate-in fade-in duration-200">
+                  <p className="text-xs text-slate-500 font-medium">
+                    Veuillez saisir les coordonnées du deuxième locataire. Cela ouvrira un second dossier à compléter en parallèle.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">Prénom du colocataire</label>
+                      <input 
+                        name="roommateFirstName" 
+                        type="text" 
+                        required={signatairesCount === 2}
+                        placeholder="ex: Jean" 
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">Nom du colocataire</label>
+                      <input 
+                        name="roommateLastName" 
+                        type="text" 
+                        required={signatairesCount === 2}
+                        placeholder="ex: Dupont" 
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">Situation professionnelle</label>
+                      <select 
+                        name="roommateEmploymentStatus" 
+                        defaultValue="CDI" 
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none bg-white"
+                      >
+                        <option value="CDI">CDI hors période d'essai</option>
+                        <option value="CDI_MOBILITY">CDI en mobilité</option>
+                        <option value="PUBLIC_SERVANT">Fonctionnaire</option>
+                        <option value="SELF_EMPLOYED">Indépendant</option>
+                        <option value="CDD">CDD</option>
+                        <option value="RETIRED">Retraité</option>
+                        <option value="STUDENT">Étudiant</option>
+                        <option value="UNEMPLOYED">Sans emploi</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">Revenu net mensuel (€)</label>
+                      <input 
+                        name="roommateIncome" 
+                        type="number" 
+                        min="0"
+                        required={signatairesCount === 2}
+                        placeholder="ex: 1800" 
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" 
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {state?.error && (
               <p className="text-sm font-semibold text-red-500 mb-4 text-center">{state.error}</p>
             )}

@@ -320,6 +320,11 @@ export async function validateDossierAction(prevState: any, formData: FormData) 
 const AcceptConditionsSchema = z.object({
   applicationId: z.string(),
   isStudent: z.boolean().default(false),
+  isColocation: z.boolean().default(false),
+  roommateFirstName: z.string().optional(),
+  roommateLastName: z.string().optional(),
+  roommateEmploymentStatus: z.string().optional(),
+  roommateIncome: z.number().optional(),
 });
 
 const DeleteApplicationSchema = z.object({
@@ -335,17 +340,30 @@ export async function acceptConditionsAction(prevState: any, formData: FormData)
   const parsed = AcceptConditionsSchema.safeParse({
     applicationId: formData.get("applicationId"),
     isStudent: formData.get("isStudent") === "true",
+    isColocation: formData.get("isColocation") === "true",
+    roommateFirstName: formData.get("roommateFirstName") as string || undefined,
+    roommateLastName: formData.get("roommateLastName") as string || undefined,
+    roommateEmploymentStatus: formData.get("roommateEmploymentStatus") as string || undefined,
+    roommateIncome: formData.get("roommateIncome") ? Number(formData.get("roommateIncome")) : undefined,
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const { applicationId, isStudent } = parsed.data;
+  const { 
+    applicationId, 
+    isStudent, 
+    isColocation, 
+    roommateFirstName, 
+    roommateLastName, 
+    roommateEmploymentStatus, 
+    roommateIncome 
+  } = parsed.data;
 
   const application = await prisma.application.findUnique({
     where: { id: applicationId },
-    include: { candidate: { select: { email: true } } }
+    include: { candidate: { select: { email: true, id: true } }, property: true }
   });
   if (
     !application ||
@@ -357,6 +375,38 @@ export async function acceptConditionsAction(prevState: any, formData: FormData)
     return { error: "Dossier introuvable ou non autorisé." };
   }
 
+  const candidateId = application.candidateId;
+
+  // Mettre à jour le statut colocation du candidat
+  await prisma.candidate.update({
+    where: { id: candidateId },
+    data: {
+      isColocation,
+      roommatesCount: isColocation ? 1 : 0,
+    }
+  });
+
+  // Mettre à jour le colocataire
+  if (isColocation && roommateFirstName && roommateLastName) {
+    await prisma.roommate.deleteMany({
+      where: { candidateId }
+    });
+    await prisma.roommate.create({
+      data: {
+        candidateId,
+        firstName: roommateFirstName,
+        lastName: roommateLastName,
+        employmentStatus: roommateEmploymentStatus || "CDI",
+        declaredMonthlyIncome: roommateIncome || 0,
+      }
+    });
+  } else if (!isColocation) {
+    await prisma.roommate.deleteMany({
+      where: { candidateId }
+    });
+  }
+
+  // Mettre à jour la candidature
   await prisma.application.update({
     where: { id: applicationId },
     data: { 
@@ -364,6 +414,14 @@ export async function acceptConditionsAction(prevState: any, formData: FormData)
       isStudent 
     }
   });
+
+  // Synchroniser les pièces justificatives
+  const updatedCandidate = await prisma.candidate.findUnique({
+    where: { id: candidateId },
+    include: { roommates: true, guarantor: true }
+  });
+  const { syncDocumentRequirements } = await import("@/lib/documentRequirements");
+  await syncDocumentRequirements(applicationId, application.property, updatedCandidate);
 
   revalidatePath(`/dossier/${applicationId}`);
 
