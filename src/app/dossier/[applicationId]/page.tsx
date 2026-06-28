@@ -412,11 +412,11 @@ export default async function DossierPage({
                         const isValidated = uploadedDoc?.status === "VALIDATED";
                         
                         return (
-                          <div key={expectedDoc.key} className={`p-5 border rounded-2xl space-y-4 transition-all duration-300 shadow-sm ${
-                            isRejected ? 'bg-gradient-to-br from-red-50/50 to-white border-red-300' :
-                            isValidated ? 'bg-gradient-to-br from-green-50/50 to-white border-green-200' :
-                            isPending ? 'bg-gradient-to-br from-blue-50/50 to-white border-blue-200' :
-                            'bg-white border-slate-200 hover:border-primary/30 hover:shadow-md'
+                          <div key={expectedDoc.key} className={`p-5 border rounded-2xl space-y-4 transition-all duration-300 shadow-sm backdrop-blur-md ${
+                            isRejected ? 'bg-gradient-to-br from-red-50/70 to-white/90 border-red-300/80' :
+                            isValidated ? 'bg-gradient-to-br from-green-50/70 to-white/90 border-green-200/80' :
+                            isPending ? 'bg-gradient-to-br from-blue-50/70 to-white/90 border-blue-200/80' :
+                            'bg-white/90 border-slate-200/80 hover:border-primary/30 hover:shadow-md'
                           }`}>
                             <div className="flex items-center justify-between">
                               <span className={`font-semibold flex items-center gap-3 ${
