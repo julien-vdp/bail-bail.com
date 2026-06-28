@@ -225,17 +225,16 @@ export async function validateDossierAction(prevState: any, formData: FormData) 
     return { error: "Dossier introuvable ou non autorisé." };
   }
 
-  // Vérifier si des documents ne sont pas encore validés par le candidat
-  const unapprovedDocs = await prisma.document.count({
+  // Valider automatiquement toutes les pièces déposées (filigrane) non encore approuvées lors de la soumission du dossier
+  await prisma.document.updateMany({
     where: {
       applicationId,
       candidateApproved: false
+    },
+    data: {
+      candidateApproved: true
     }
   });
-
-  if (unapprovedDocs > 0) {
-    return { error: "Vous devez valider toutes les pièces déposées (filigrane) avant de pouvoir soumettre le dossier." };
-  }
 
   const app = await prisma.application.update({
     where: { id: applicationId },
