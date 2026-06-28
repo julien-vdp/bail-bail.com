@@ -164,12 +164,48 @@ export default async function DossierPage({
 
   // Groupement des documents par catégorie
   const categories = [
-    { title: "Identité", icon: <User className="w-5 h-5 text-[#1463FF]" />, category: "IDENTITY" },
-    { title: "Domicile", icon: <Home className="w-5 h-5 text-[#1463FF]" />, category: "DOMICILE" },
-    { title: "Situation professionnelle", icon: <GraduationCap className="w-5 h-5 text-[#1463FF]" />, category: "EMPLOYMENT" },
-    { title: "Revenus", icon: <Coins className="w-5 h-5 text-[#1463FF]" />, category: "INCOME" },
-    { title: "Fiscalité", icon: <FileText className="w-5 h-5 text-[#1463FF]" />, category: "TAX" },
-    { title: "Autres pièces", icon: <FileText className="w-5 h-5 text-[#1463FF]" />, category: "OTHER" }
+    { 
+      title: "Identité", 
+      icon: <User className="w-5 h-5 text-[#1463FF]" />, 
+      category: "IDENTITY",
+      image: "/categories/category_identity.png",
+      style: "absolute -right-6 -bottom-10 w-44 h-44 opacity-20 pointer-events-none mix-blend-multiply rotate-[6deg] scale-110 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-115 group-hover:-translate-y-2 group-hover:translate-x-1" 
+    },
+    { 
+      title: "Domicile", 
+      icon: <Home className="w-5 h-5 text-[#1463FF]" />, 
+      category: "DOMICILE",
+      image: "/categories/category_domicile.png",
+      style: "absolute -right-8 -bottom-8 w-44 h-44 opacity-20 pointer-events-none mix-blend-multiply -rotate-[4deg] scale-100 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-110 group-hover:-translate-y-1 group-hover:-translate-x-1" 
+    },
+    { 
+      title: "Situation professionnelle", 
+      icon: <GraduationCap className="w-5 h-5 text-[#1463FF]" />, 
+      category: "EMPLOYMENT",
+      image: "/categories/category_employment.png",
+      style: "absolute -right-4 -bottom-6 w-44 h-44 opacity-20 pointer-events-none mix-blend-multiply rotate-[3deg] scale-115 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-120 group-hover:-translate-y-2 group-hover:translate-x-1" 
+    },
+    { 
+      title: "Revenus", 
+      icon: <Coins className="w-5 h-5 text-[#1463FF]" />, 
+      category: "INCOME",
+      image: "/categories/category_income.png",
+      style: "absolute -right-8 -bottom-12 w-44 h-44 opacity-20 pointer-events-none mix-blend-multiply -rotate-[6deg] scale-105 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-115 group-hover:-translate-y-2 group-hover:-translate-x-1" 
+    },
+    { 
+      title: "Fiscalité", 
+      icon: <FileText className="w-5 h-5 text-[#1463FF]" />, 
+      category: "TAX",
+      image: "/categories/category_tax.png",
+      style: "absolute -right-6 -bottom-6 w-44 h-44 opacity-20 pointer-events-none mix-blend-multiply rotate-[2deg] scale-100 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-110 group-hover:-translate-y-1 group-hover:translate-x-1" 
+    },
+    { 
+      title: "Autres pièces", 
+      icon: <FileText className="w-5 h-5 text-[#1463FF]" />, 
+      category: "OTHER",
+      image: "/categories/category_other.png",
+      style: "absolute -right-4 -bottom-10 w-44 h-44 opacity-20 pointer-events-none mix-blend-multiply -rotate-[3deg] scale-110 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-115 group-hover:-translate-y-2 group-hover:-translate-x-1" 
+    }
   ];
 
   const renderedSections = categories.map(cat => {
@@ -346,15 +382,29 @@ export default async function DossierPage({
               
               <div className="space-y-10">
                 {renderedSections.map(sec => (
-                  <div key={sec.title} className="space-y-4">
-                    <h3 className="font-bold text-[#092B5A] text-lg border-b pb-2 flex items-center gap-2">
+                  <div 
+                    key={sec.title} 
+                    className="group relative p-6 md:p-8 bg-[#1463FF]/[0.015] border border-slate-100/80 rounded-[2rem] overflow-hidden space-y-6 transition-all duration-500 hover:border-slate-200/80 hover:shadow-lg hover:shadow-primary/5 hover:bg-[#1463FF]/[0.03]"
+                  >
+                    {/* Background Illustration with transparency */}
+                    {sec.image && (
+                      <div className={sec.style}>
+                        <Image 
+                          src={sec.image} 
+                          alt={sec.title}
+                          width={200}
+                          height={200}
+                          className="object-contain w-full h-full"
+                        />
+                      </div>
+                    )}
+
+                    <h3 className="font-bold text-[#092B5A] text-lg border-b pb-2 flex items-center gap-2 relative z-10">
                       {sec.icon}
                       <span>{sec.title}</span>
                     </h3>
                     
-
-
-                    <div className="space-y-4">
+                    <div className="space-y-4 relative z-10">
                       {sec.docs.map(expectedDoc => {
                         const uploadedDoc = application.documents.find(d => d.requirementId === expectedDoc.id || d.type === expectedDoc.key);
                         const isRejected = uploadedDoc?.status === "REJECTED";
