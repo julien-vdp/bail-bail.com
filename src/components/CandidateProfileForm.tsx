@@ -48,6 +48,12 @@ export function CandidateProfileForm({
   const [guarantorDeclaredMonthlyIncome, setGuarantorDeclaredMonthlyIncome] = useState(candidate?.guarantor?.declaredMonthlyIncome?.toString() || "");
   const [guarantorFiscalResidenceInFrance, setGuarantorFiscalResidenceInFrance] = useState<boolean>(candidate?.guarantor?.fiscalResidenceInFrance !== false);
 
+  useEffect(() => {
+    if (state?.success) {
+      window.location.href = `/dossier/${applicationId}`;
+    }
+  }, [state, applicationId]);
+
   // Sync roommates count and list
   useEffect(() => {
     if (isColocation) {

@@ -16,8 +16,10 @@ import { CandidateProfileForm } from "@/components/CandidateProfileForm";
 
 export default async function DossierPage({
   params,
+  searchParams,
 }: {
-  params: Promise<{ applicationId: string }>
+  params: Promise<{ applicationId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const applicationId = (await params).applicationId;
   const session = await verifySession();
@@ -51,10 +53,23 @@ export default async function DossierPage({
     notFound();
   }
 
-  // --- ÉTAPE 3 : Remplir le profil professionnel si manquant ---
-  if (!application.candidate.employmentStatus) {
+  // --- ÉTAPE 3 : Remplir le profil professionnel si manquant ou en cours d'édition ---
+  const searchParamsResolved = await searchParams;
+  const isEditing = searchParamsResolved?.edit === "true";
+
+  if (!application.candidate.employmentStatus || isEditing) {
     return (
-      <div className="container max-w-4xl mx-auto p-4 py-12 min-h-[calc(100vh-80px)] flex items-center justify-center bg-slate-50">
+      <div className="container max-w-4xl mx-auto p-4 py-12 min-h-[calc(100vh-80px)] flex flex-col items-center justify-center bg-slate-50 gap-4">
+        {isEditing && (
+          <div className="max-w-2xl w-full mx-auto flex items-center justify-start px-4">
+            <Link 
+              href={`/dossier/${application.id}`}
+              className={buttonVariants({ variant: "ghost", size: "sm", className: "gap-1.5" })}
+            >
+              ← Retour au dossier
+            </Link>
+          </div>
+        )}
         <CandidateProfileForm 
           applicationId={application.id} 
           candidate={application.candidate} 
@@ -482,7 +497,17 @@ export default async function DossierPage({
 
                 {/* 4. Profil Déclaré */}
                 <div className="space-y-2">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Votre situation</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Votre situation</span>
+                    {(application.status === "NOUVEAU" || application.status === "INCOMPLET") && (
+                      <Link 
+                        href={`/dossier/${application.id}?edit=true`}
+                        className="text-[11px] text-[#1463FF] hover:underline font-bold"
+                      >
+                        Modifier
+                      </Link>
+                    )}
+                  </div>
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-xs space-y-2 font-medium text-slate-700">
                     <div className="flex justify-between">
                       <span>Activité :</span>
