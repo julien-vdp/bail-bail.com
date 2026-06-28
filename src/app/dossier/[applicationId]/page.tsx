@@ -169,42 +169,42 @@ export default async function DossierPage({
       icon: <User className="w-5 h-5 text-[#1463FF]" />, 
       category: "IDENTITY",
       image: "/categories/category_identity.png",
-      style: "absolute -right-6 -bottom-10 w-44 h-44 opacity-20 pointer-events-none mix-blend-multiply rotate-[6deg] scale-110 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-115 group-hover:-translate-y-2 group-hover:translate-x-1" 
+      style: "absolute -right-6 -bottom-10 w-44 h-44 opacity-35 pointer-events-none mix-blend-multiply rotate-[6deg] scale-110 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-115 group-hover:-translate-y-2 group-hover:translate-x-1 group-hover:opacity-55" 
     },
     { 
       title: "Domicile", 
       icon: <Home className="w-5 h-5 text-[#1463FF]" />, 
       category: "DOMICILE",
       image: "/categories/category_domicile.png",
-      style: "absolute -right-8 -bottom-8 w-44 h-44 opacity-20 pointer-events-none mix-blend-multiply -rotate-[4deg] scale-100 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-110 group-hover:-translate-y-1 group-hover:-translate-x-1" 
+      style: "absolute -right-8 -bottom-8 w-44 h-44 opacity-35 pointer-events-none mix-blend-multiply -rotate-[4deg] scale-100 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-110 group-hover:-translate-y-1 group-hover:-translate-x-1 group-hover:opacity-55" 
     },
     { 
       title: "Situation professionnelle", 
       icon: <GraduationCap className="w-5 h-5 text-[#1463FF]" />, 
       category: "EMPLOYMENT",
       image: "/categories/category_employment.png",
-      style: "absolute -right-4 -bottom-6 w-44 h-44 opacity-20 pointer-events-none mix-blend-multiply rotate-[3deg] scale-115 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-120 group-hover:-translate-y-2 group-hover:translate-x-1" 
+      style: "absolute -right-4 -bottom-6 w-44 h-44 opacity-35 pointer-events-none mix-blend-multiply rotate-[3deg] scale-115 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-120 group-hover:-translate-y-2 group-hover:translate-x-1 group-hover:opacity-55" 
     },
     { 
       title: "Revenus", 
       icon: <Coins className="w-5 h-5 text-[#1463FF]" />, 
       category: "INCOME",
       image: "/categories/category_income.png",
-      style: "absolute -right-8 -bottom-12 w-44 h-44 opacity-20 pointer-events-none mix-blend-multiply -rotate-[6deg] scale-105 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-115 group-hover:-translate-y-2 group-hover:-translate-x-1" 
+      style: "absolute -right-8 -bottom-12 w-44 h-44 opacity-35 pointer-events-none mix-blend-multiply -rotate-[6deg] scale-105 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-115 group-hover:-translate-y-2 group-hover:-translate-x-1 group-hover:opacity-55" 
     },
     { 
       title: "Fiscalité", 
       icon: <FileText className="w-5 h-5 text-[#1463FF]" />, 
       category: "TAX",
       image: "/categories/category_tax.png",
-      style: "absolute -right-6 -bottom-6 w-44 h-44 opacity-20 pointer-events-none mix-blend-multiply rotate-[2deg] scale-100 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-110 group-hover:-translate-y-1 group-hover:translate-x-1" 
+      style: "absolute -right-6 -bottom-6 w-44 h-44 opacity-35 pointer-events-none mix-blend-multiply rotate-[2deg] scale-100 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-110 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:opacity-55" 
     },
     { 
       title: "Autres pièces", 
       icon: <FileText className="w-5 h-5 text-[#1463FF]" />, 
       category: "OTHER",
       image: "/categories/category_other.png",
-      style: "absolute -right-4 -bottom-10 w-44 h-44 opacity-20 pointer-events-none mix-blend-multiply -rotate-[3deg] scale-110 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-115 group-hover:-translate-y-2 group-hover:-translate-x-1" 
+      style: "absolute -right-4 -bottom-10 w-44 h-44 opacity-35 pointer-events-none mix-blend-multiply -rotate-[3deg] scale-110 select-none hidden md:block transition-all duration-500 ease-out group-hover:scale-115 group-hover:-translate-y-2 group-hover:translate-x-1 group-hover:opacity-55" 
     }
   ];
 
@@ -413,10 +413,10 @@ export default async function DossierPage({
                         
                         return (
                           <div key={expectedDoc.key} className={`p-5 border rounded-2xl space-y-4 transition-all duration-300 shadow-sm backdrop-blur-md ${
-                            isRejected ? 'bg-gradient-to-br from-red-50/70 to-white/90 border-red-300/80' :
-                            isValidated ? 'bg-gradient-to-br from-green-50/70 to-white/90 border-green-200/80' :
-                            isPending ? 'bg-gradient-to-br from-blue-50/70 to-white/90 border-blue-200/80' :
-                            'bg-white/90 border-slate-200/80 hover:border-primary/30 hover:shadow-md'
+                            isRejected ? 'bg-gradient-to-br from-red-50/60 to-white/75 border-red-300/60' :
+                            isValidated ? 'bg-gradient-to-br from-green-50/60 to-white/75 border-green-200/60' :
+                            isPending ? 'bg-gradient-to-br from-blue-50/60 to-white/75 border-blue-200/60' :
+                            'bg-white/75 border-slate-200/60 hover:border-primary/30 hover:shadow-md'
                           }`}>
                             <div className="flex items-center justify-between">
                               <span className={`font-semibold flex items-center gap-3 ${
