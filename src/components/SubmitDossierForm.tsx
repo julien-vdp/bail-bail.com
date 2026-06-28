@@ -7,6 +7,7 @@ import { Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
+import { createPortal } from "react-dom";
 
 export function SubmitDossierForm({ 
   applicationId, 
@@ -23,8 +24,14 @@ export function SubmitDossierForm({
   const router = useRouter();
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [comment, setComment] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
   
   const isComplete = progress === 100 && allApproved;
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (state?.success) {
@@ -89,7 +96,7 @@ export function SubmitDossierForm({
         </div>
       )}
 
-      <form action={formAction} className="space-y-4">
+      <form id="submit-dossier-form" action={formAction} className="space-y-4">
         <input type="hidden" name="applicationId" value={applicationId} />
         <input type="hidden" name="comment" value={comment} />
         <input type="hidden" name="status" value={isComplete ? "COMPLET" : "SOUMIS_INCOMPLET"} />
@@ -114,21 +121,23 @@ export function SubmitDossierForm({
           )}
         </Button>
 
-        {/* Modal d'alerte orange au milieu de l'écran pour dossier incomplet */}
-        {showWarningModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-[2rem] border border-amber-200 max-w-lg w-full p-8 shadow-2xl relative overflow-hidden flex flex-col items-center text-center space-y-5 animate-in zoom-in duration-300">
+        {/* Modal d'alerte orange rendu via Portal pour éviter les soucis de z-index et de stacking context */}
+        {showWarningModal && isMounted && createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-[2rem] border border-amber-200 max-w-md w-full p-8 shadow-2xl relative flex flex-col items-center text-center space-y-5 animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto">
               
               {/* Illustration orange générée pour l'alerte */}
-              <Image 
-                src="/warning_incomplete.png" 
-                alt="Attention dossier incomplet" 
-                width={140} 
-                height={140} 
-                className="object-contain drop-shadow-md"
-              />
+              <div className="relative w-28 h-28 shrink-0 flex items-center justify-center">
+                <Image 
+                  src="/warning_incomplete.png" 
+                  alt="Attention dossier incomplet" 
+                  width={110} 
+                  height={110} 
+                  className="object-contain drop-shadow-md"
+                />
+              </div>
               
-              <h3 className="text-2xl font-black text-amber-900">Dossier incomplet ({progress}%)</h3>
+              <h3 className="text-xl font-black text-amber-900">Dossier incomplet ({progress}%)</h3>
               
               <p className="text-amber-800 text-xs leading-relaxed max-w-sm">
                 Attention, un dossier incomplet a <strong>très peu de chances d&apos;être retenu</strong> par le propriétaire.<br />
@@ -148,18 +157,12 @@ export function SubmitDossierForm({
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row w-full gap-3 pt-2">
-                <Button 
-                  type="button"
-                  onClick={() => setShowWarningModal(false)}
-                  className="flex-1 h-11 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all"
-                >
-                  Je complète mon dossier
-                </Button>
+              <div className="flex flex-col w-full gap-2 pt-2">
                 <Button 
                   type="submit"
+                  form="submit-dossier-form"
                   disabled={isPending}
-                  className="flex-1 h-11 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
+                  className="w-full h-11 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
                 >
                   {isPending ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -167,9 +170,17 @@ export function SubmitDossierForm({
                     "J'ai compris, et je valide mon dossier incomplet"
                   )}
                 </Button>
+                <Button 
+                  type="button"
+                  onClick={() => setShowWarningModal(false)}
+                  className="w-full h-11 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all"
+                >
+                  Je complète mon dossier
+                </Button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </form>
     </div>
