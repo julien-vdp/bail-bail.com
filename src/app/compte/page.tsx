@@ -43,6 +43,8 @@ export default async function AccountPage() {
     switch (status) {
       case 'NOUVEAU': return <span className="bg-blue-100 text-blue-700 text-[10px] uppercase px-2 py-1 rounded-full font-bold">Nouveau</span>;
       case 'INCOMPLET': return <span className="bg-orange-100 text-orange-700 text-[10px] uppercase px-2 py-1 rounded-full font-bold">Incomplet</span>;
+      case 'SOUMIS_INCOMPLET': return <span className="bg-amber-100 text-amber-700 text-[10px] uppercase px-2 py-1 rounded-full font-bold">Soumis Incomplet</span>;
+      case 'COMPLET': return <span className="bg-teal-100 text-teal-700 text-[10px] uppercase px-2 py-1 rounded-full font-bold">Complet</span>;
       case 'EN_COURS': return <span className="bg-purple-100 text-purple-700 text-[10px] uppercase px-2 py-1 rounded-full font-bold">En analyse</span>;
       case 'ACCEPTE': return <span className="bg-green-100 text-green-700 text-[10px] uppercase px-2 py-1 rounded-full font-bold">Accepté</span>;
       case 'REFUSE': return <span className="bg-red-100 text-red-700 text-[10px] uppercase px-2 py-1 rounded-full font-bold">Refusé</span>;

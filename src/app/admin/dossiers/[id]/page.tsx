@@ -11,6 +11,7 @@ import { StatusForm } from "./StatusForm";
 import { DocumentViewerModal } from "@/components/admin/DocumentViewerModal";
 import { ConfirmVisitSlotForm } from "@/components/admin/ConfirmVisitSlotForm";
 import { generateDocumentRequirements } from "@/lib/documentRequirements";
+import Image from "next/image";
 
 export default async function AdminApplicationPage({
   params,
@@ -53,6 +54,8 @@ export default async function AdminApplicationPage({
     switch (status) {
       case 'NOUVEAU': return <Badge className="bg-blue-500 hover:bg-blue-600">Nouveau</Badge>;
       case 'INCOMPLET': return <Badge variant="destructive" className="bg-orange-500 hover:bg-orange-600">Incomplet</Badge>;
+      case 'SOUMIS_INCOMPLET': return <Badge className="bg-amber-500 hover:bg-amber-600 text-white border-amber-600">Soumis Incomplet</Badge>;
+      case 'COMPLET': return <Badge className="bg-teal-500 hover:bg-teal-600 text-white border-teal-600">Complet</Badge>;
       case 'EN_COURS': return <Badge className="bg-purple-500 hover:bg-purple-600">En cours</Badge>;
       case 'ACCEPTE': return <Badge className="bg-green-500 hover:bg-green-600">Accepté</Badge>;
       case 'REFUSE': return <Badge variant="destructive">Refusé</Badge>;
@@ -128,6 +131,19 @@ export default async function AdminApplicationPage({
     !expectedDocs.some(expected => expected.key === doc.type)
   );
 
+  // Rechercher un éventuel commentaire dans l'historique de soumission
+  const submissionLog = application.auditLogs.find(
+    log => log.action === "SOUMIS_INCOMPLET" || (log.action === "SOUMISSION_DOSSIER" && log.details.includes("Commentaire :"))
+  );
+  
+  let candidateCommentText = "";
+  if (submissionLog) {
+    const parts = submissionLog.details.split("Commentaire : ");
+    if (parts.length > 1) {
+      candidateCommentText = parts[1];
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -162,6 +178,54 @@ export default async function AdminApplicationPage({
           </div>
         </div>
       </div>
+
+      {/* Alerte si le dossier a été soumis incomplet */}
+      {application.status === "SOUMIS_INCOMPLET" && (
+        <div className="bg-amber-50 border border-amber-200 rounded-[2rem] p-6 flex flex-col sm:flex-row items-center sm:items-start gap-5 shadow-sm">
+          <div className="relative w-16 h-16 shrink-0 bg-white rounded-2xl border border-amber-100 flex items-center justify-center p-1.5 shadow-sm">
+            <Image 
+              src="/warning_incomplete.png" 
+              alt="Attention dossier incomplet" 
+              width={56} 
+              height={56} 
+              className="object-contain" 
+            />
+          </div>
+          <div className="flex-1 text-center sm:text-left space-y-1">
+            <h3 className="font-extrabold text-amber-900 text-base flex items-center justify-center sm:justify-start gap-2">
+              ⚠️ Candidature soumise en l&apos;état (incomplète)
+            </h3>
+            <p className="text-amber-800 text-sm leading-relaxed">
+              Le candidat a choisi de valider son dossier sans avoir déposé toutes les pièces obligatoires.
+            </p>
+            {candidateCommentText && (
+              <div className="mt-4 bg-white/60 backdrop-blur-sm border border-amber-200/50 p-4 rounded-2xl relative">
+                <span className="text-[10px] font-bold text-amber-950 uppercase tracking-wider block mb-1">
+                  Message d&apos;accompagnement du candidat :
+                </span>
+                <p className="text-amber-900 font-semibold italic text-sm">
+                  &quot;{candidateCommentText}&quot;
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Message simple si complet mais avec un commentaire */}
+      {application.status !== "SOUMIS_INCOMPLET" && candidateCommentText && (
+        <div className="bg-slate-50 border border-slate-200 rounded-[2rem] p-6 flex flex-col sm:flex-row items-center sm:items-start gap-4 shadow-sm">
+          <MessageSquare className="h-6 w-6 text-[#1463FF] shrink-0 mt-1" />
+          <div className="flex-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+              Message d&apos;accompagnement du candidat :
+            </span>
+            <p className="text-slate-700 font-semibold italic text-sm">
+              &quot;{candidateCommentText}&quot;
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -297,7 +361,7 @@ export default async function AdminApplicationPage({
                             </div>
                             {doc.candidateComment && (
                               <p className="text-[11px] text-slate-600 bg-white/80 border rounded px-2 py-1 mt-1 italic">
-                                Commentaire candidat : "{doc.candidateComment}"
+                                Commentaire candidat : &quot;{doc.candidateComment}&quot;
                               </p>
                             )}
                             {doc.status === "REJECTED" && doc.rejectionReason && (
@@ -498,7 +562,7 @@ export default async function AdminApplicationPage({
                       <span className="font-bold text-[#092B5A]">{rentWithCharges} € / mois</span>
                     </div>
                     <div className="flex justify-between pb-1.5 border-b border-slate-100">
-                      <span className="text-slate-500 font-medium">Taux d'effort calculé :</span>
+                      <span className="text-slate-500 font-medium">Taux d&apos;effort calculé :</span>
                       <span className={`font-extrabold ${effortRate <= targetThreshold ? 'text-green-600' : 'text-amber-600'}`}>
                         {effortRate} %
                       </span>

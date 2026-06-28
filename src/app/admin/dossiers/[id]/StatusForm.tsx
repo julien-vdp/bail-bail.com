@@ -7,7 +7,9 @@ import { Loader2 } from "lucide-react";
 
 const STATUSES = [
   { value: "NOUVEAU", label: "Nouveau", color: "text-blue-700 bg-blue-100" },
-  { value: "INCOMPLET", label: "Incomplet", color: "text-orange-700 bg-orange-100" },
+  { value: "INCOMPLET", label: "Incomplet (modification candidat)", color: "text-orange-700 bg-orange-100" },
+  { value: "SOUMIS_INCOMPLET", label: "Soumis Incomplet", color: "text-amber-700 bg-amber-100" },
+  { value: "COMPLET", label: "Complet", color: "text-teal-700 bg-teal-100" },
   { value: "EN_COURS", label: "En cours d'analyse", color: "text-purple-700 bg-purple-100" },
   { value: "ACCEPTE", label: "Accepté", color: "text-green-700 bg-green-100" },
   { value: "REFUSE", label: "Refusé", color: "text-red-700 bg-red-100" },

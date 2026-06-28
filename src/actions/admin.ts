@@ -13,7 +13,7 @@ async function requireOwnerSession() {
 
 const UpdateStatusSchema = z.object({
   applicationId: z.string(),
-  status: z.enum(["NOUVEAU", "INCOMPLET", "EN_COURS", "ACCEPTE", "REFUSE"]),
+  status: z.enum(["NOUVEAU", "INCOMPLET", "SOUMIS_INCOMPLET", "COMPLET", "EN_COURS", "ACCEPTE", "REFUSE"]),
 });
 
 export async function updateApplicationStatus(prevState: any, formData: FormData) {

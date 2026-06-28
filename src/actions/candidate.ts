@@ -125,6 +125,8 @@ export async function submitApplicationAction(prevState: any, formData: FormData
 
 const ValidateDossierSchema = z.object({
   applicationId: z.string(),
+  comment: z.string().optional(),
+  status: z.string().optional(),
 });
 
 const ApproveDocumentSchema = z.object({
@@ -203,13 +205,15 @@ export async function validateDossierAction(prevState: any, formData: FormData) 
 
   const parsed = ValidateDossierSchema.safeParse({
     applicationId: formData.get("applicationId"),
+    comment: formData.get("comment"),
+    status: formData.get("status"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const { applicationId } = parsed.data;
+  const { applicationId, comment, status } = parsed.data;
 
   const application = await prisma.application.findUnique({
     where: { id: applicationId },
@@ -236,9 +240,12 @@ export async function validateDossierAction(prevState: any, formData: FormData) 
     }
   });
 
+  const isSubmissionIncomplete = status === "SOUMIS_INCOMPLET";
+  const targetStatus = isSubmissionIncomplete ? "SOUMIS_INCOMPLET" : "COMPLET";
+
   const app = await prisma.application.update({
     where: { id: applicationId },
-    data: { status: "COMPLET" },
+    data: { status: targetStatus },
     include: {
       candidate: true,
       property: {
@@ -252,8 +259,10 @@ export async function validateDossierAction(prevState: any, formData: FormData) 
   await prisma.auditLog.create({
     data: {
       applicationId,
-      action: "SOUMISSION_DOSSIER",
-      details: "Dossier validé et soumis pour étude par le candidat."
+      action: isSubmissionIncomplete ? "SOUMIS_INCOMPLET" : "SOUMISSION_DOSSIER",
+      details: isSubmissionIncomplete
+        ? `Dossier validé et soumis en l'état (incomplet).${comment ? ` Commentaire : ${comment}` : ""}`
+        : `Dossier validé et soumis pour étude par le candidat.${comment ? ` Commentaire : ${comment}` : ""}`
     }
   });
 
@@ -281,15 +290,18 @@ export async function validateDossierAction(prevState: any, formData: FormData) 
   if (app.property.owner?.email) {
     await sendEmail({
       to: app.property.owner.email,
-      subject: `Nouveau dossier complet : ${app.property.title}`,
+      subject: isSubmissionIncomplete
+        ? `Dossier soumis incomplet : ${app.property.title}`
+        : `Nouveau dossier complet : ${app.property.title}`,
       html: emailWrapper(
-        "Nouveau dossier complet",
+        isSubmissionIncomplete ? "Dossier soumis incomplet" : "Nouveau dossier complet",
         `
         <p>Bonjour <strong>${app.property.owner.name}</strong>,</p>
-        <p>Le candidat <strong>${app.candidate.firstName} ${app.candidate.lastName}</strong> a finalisé le dépôt de ses pièces justificatives pour votre annonce <strong>${app.property.title}</strong>.</p>
-        <p>Le statut de sa candidature est passé à <span style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-weight: bold;">Complet</span>.</p>
+        <p>Le candidat <strong>${app.candidate.firstName} ${app.candidate.lastName}</strong> a soumis son dossier pour votre annonce <strong>${app.property.title}</strong>.</p>
+        <p>Le statut de sa candidature est passé à : <span style="background: ${isSubmissionIncomplete ? "#fef3c7; color: #92400e;" : "#d1fae5; color: #065f46;"} padding: 4px 10px; border-radius: 9999px; font-weight: bold; font-size: 14px;">${isSubmissionIncomplete ? "Soumis Incomplet" : "Complet"}</span>.</p>
+        ${comment ? `<div style="background: #f8fafc; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 8px;"><strong style="color: #0f172a; font-size: 14px;">Message du candidat :</strong><p style="margin: 5px 0 0 0; color: #475569; font-style: italic;">"${comment}"</p></div>` : ""}
         <div style="text-align: center; margin-top: 30px; margin-bottom: 10px;">
-          <a href="https://bail-bail.com/auth" style="padding: 12px 24px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Accéder à mon espace propriétaire</a>
+          <a href="https://bail-bail.com/auth" style="padding: 12px 24px; background: #1463FF; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Accéder à mon espace propriétaire</a>
         </div>
         `
       )
@@ -299,15 +311,23 @@ export async function validateDossierAction(prevState: any, formData: FormData) 
   // Email au candidat
   await sendEmail({
     to: app.candidate.email,
-    subject: `Votre dossier est complet : ${app.property.title}`,
+    subject: isSubmissionIncomplete
+      ? `Confirmation de soumission (dossier incomplet) : ${app.property.title}`
+      : `Votre dossier est complet : ${app.property.title}`,
     html: emailWrapper(
-      "Dossier envoyé avec succès",
+      isSubmissionIncomplete ? "Dossier soumis incomplet" : "Dossier envoyé avec succès",
       `
       <p>Bonjour <strong>${app.candidate.firstName}</strong>,</p>
-      <p>Félicitations ! Vous avez finalisé le dépôt de vos pièces justificatives pour le logement <strong>${app.property.title}</strong>.</p>
-      <p>Votre dossier a été automatiquement transmis au propriétaire. Celui-ci l'étudiera dans les plus brefs délais et reviendra vers vous.</p>
+      ${isSubmissionIncomplete ? `
+        <p>Votre dossier pour le logement <strong>${app.property.title}</strong> a été soumis en l'état (incomplet).</p>
+        <p>Le propriétaire a été prévenu et verra que votre dossier est incomplet. Nous vous encourageons à rajouter les pièces manquantes si nécessaire.</p>
+      ` : `
+        <p>Félicitations ! Vous avez finalisé le dépôt de vos pièces justificatives pour le logement <strong>${app.property.title}</strong>.</p>
+        <p>Votre dossier a été automatiquement transmis au propriétaire. Celui-ci l'étudiera dans les plus brefs délais et reviendra vers vous.</p>
+      `}
+      ${comment ? `<div style="background: #f8fafc; border-left: 4px solid #64748b; padding: 15px; margin: 20px 0; border-radius: 8px;"><strong style="color: #0f172a; font-size: 14px;">Votre message joint :</strong><p style="margin: 5px 0 0 0; color: #475569; font-style: italic;">"${comment}"</p></div>` : ""}
       <div style="text-align: center; margin-top: 30px; margin-bottom: 10px;">
-        <a href="https://bail-bail.com/dossier/${app.id}" style="padding: 12px 24px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Suivre ma candidature</a>
+        <a href="https://bail-bail.com/dossier/${app.id}" style="padding: 12px 24px; background: #1463FF; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Suivre ma candidature</a>
       </div>
       `
     )
