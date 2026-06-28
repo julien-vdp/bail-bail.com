@@ -20,7 +20,7 @@ async function main() {
   // 2. Create Properties
   const paris = await prisma.property.upsert({
     where: { code: 'BB-PARIS-008' },
-    update: {},
+    update: { ownerId: owner.id },
     create: {
       code: 'BB-PARIS-008',
       title: "Appartement d'exception Paris 8ème",
@@ -42,12 +42,13 @@ async function main() {
       acceptsColocation: false,
       acceptsUnstableProfiles: false,
       tenantAlreadyInPlaceStatus: 'NEW_TENANT',
+      ownerId: owner.id,
     },
   });
 
   const choisy = await prisma.property.upsert({
     where: { code: 'BB-CHOISY-001' },
-    update: {},
+    update: { ownerId: owner.id },
     create: {
       code: 'BB-CHOISY-001',
       title: 'Appartement T2 lumineux à Choisy-le-Roi',
@@ -69,12 +70,13 @@ async function main() {
       acceptsColocation: true,
       acceptsUnstableProfiles: false,
       tenantAlreadyInPlaceStatus: 'NEW_TENANT',
+      ownerId: owner.id,
     },
   });
 
   const lyon = await prisma.property.upsert({
     where: { code: 'BB-LYON-002' },
-    update: {},
+    update: { ownerId: owner.id },
     create: {
       code: 'BB-LYON-002',
       title: 'Studio meublé proche centre',
@@ -96,6 +98,7 @@ async function main() {
       acceptsColocation: true,
       acceptsUnstableProfiles: true,
       tenantAlreadyInPlaceStatus: 'NEW_TENANT',
+      ownerId: owner.id,
     },
   });
 
