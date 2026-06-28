@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Trash2, Save, Image as ImageIcon, CheckCircle2, UploadCloud, Sliders } from "lucide-react";
 import { AddressAutocomplete } from "./AddressAutocomplete";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 function AnnonceSettingsIllustration() {
   return (
@@ -80,6 +81,7 @@ export function PropertyEditForm({
   const [isPending, startTransition] = useTransition();
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [hasGli, setHasGli] = useState(property.hasGli || property.isEligibleGLI || false);
   const [gliMode, setGliMode] = useState<string>(property.gliMode || (property.hasGli || property.isEligibleGLI ? "INDICATIVE" : "NONE"));
   const [rentWithCharges, setRentWithCharges] = useState<number>(property.rentWithCharges || property.rent || 0);
@@ -166,13 +168,16 @@ export function PropertyEditForm({
     });
   };
 
-  const handleArchive = () => {
-    if (confirm("Voulez-vous vraiment archiver cette annonce ?")) {
-      startTransition(async () => {
-        await deletePropertyAction(property.id);
+  const handleDelete = () => {
+    setIsDeleteModalOpen(false);
+    startTransition(async () => {
+      const res = await deletePropertyAction(property.id);
+      if (res && res.error) {
+        alert("Erreur : " + res.error);
+      } else {
         window.location.href = "/admin";
-      });
-    }
+      }
+    });
   };
 
   return (
@@ -840,8 +845,8 @@ export function PropertyEditForm({
           </div>
 
           <div className="flex justify-between items-center pt-6 border-t">
-            <Button type="button" variant="destructive" onClick={handleArchive} disabled={isPending || isUploading}>
-              <Trash2 className="w-4 h-4 mr-2" /> Archiver
+            <Button type="button" variant="destructive" onClick={() => setIsDeleteModalOpen(true)} disabled={isPending || isUploading}>
+              <Trash2 className="w-4 h-4 mr-2" /> Supprimer l'annonce
             </Button>
             <Button type="submit" disabled={isPending || isUploading} className="gap-2">
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -850,6 +855,62 @@ export function PropertyEditForm({
           </div>
         </form>
       </div>
+
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent className="sm:max-w-[480px] p-6 rounded-2xl">
+          <DialogHeader className="text-center space-y-3">
+            <div className="flex justify-center mb-2">
+              <img
+                src="/delete_warning.png"
+                alt="Alerte Suppression"
+                className="w-[200px] h-auto object-contain rounded-xl shadow-md border border-slate-100"
+              />
+            </div>
+            <DialogTitle className="text-2xl font-extrabold text-[#092B5A] tracking-tight">
+              Supprimer définitivement ?
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 text-sm leading-relaxed">
+              Vous êtes sur le point de supprimer cette annonce immobilière.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="my-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl">
+            <div className="flex gap-3">
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-red-800 uppercase tracking-wider">Opération irrévocable</p>
+                <p className="text-xs text-red-700 leading-relaxed font-medium">
+                  Cette action supprimera également <strong>toutes les candidatures</strong> associées à ce logement ainsi que <strong>tous les documents et pièces justificatives</strong> déposés par les candidats.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="w-full sm:w-1/2 h-11 rounded-xl font-semibold border-slate-200 text-slate-600 hover:bg-slate-50"
+              disabled={isPending}
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              className="w-full sm:w-1/2 h-11 rounded-xl font-bold bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-2"
+              disabled={isPending}
+            >
+              {isPending ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Suppression...</>
+              ) : (
+                <><Trash2 className="w-4 h-4" /> Supprimer</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
