@@ -131,7 +131,18 @@ export async function getAccountInfo() {
     } else {
       const candidate = await prisma.candidate.findUnique({ where: { id: session.id } });
       if (!candidate) return { error: "Candidat non trouvé" };
-      return { data: { id: candidate.id, email: candidate.email, firstName: candidate.firstName, lastName: candidate.lastName, phone: candidate.phone, role: "CANDIDATE" } };
+      return { 
+        data: { 
+          id: candidate.id, 
+          email: candidate.email, 
+          firstName: candidate.firstName, 
+          lastName: candidate.lastName, 
+          phone: candidate.phone, 
+          role: "CANDIDATE",
+          employmentStatus: candidate.employmentStatus,
+          declaredMonthlyIncome: candidate.declaredMonthlyIncome,
+        } 
+      };
     }
   } catch (e) {
     return { error: "Erreur serveur" };
@@ -162,13 +173,34 @@ export async function updateAccount(formData: FormData) {
       const firstName = formData.get("firstName") as string;
       const lastName = formData.get("lastName") as string;
       const phone = formData.get("phone") as string;
-      const dataToUpdate: any = { firstName, lastName, phone };
+      const employmentStatus = formData.get("employmentStatus") as string;
+      const declaredMonthlyIncome = formData.get("declaredMonthlyIncome") ? Number(formData.get("declaredMonthlyIncome")) : null;
+
+      const dataToUpdate: any = { 
+        firstName, 
+        lastName, 
+        phone, 
+        employmentStatus, 
+        declaredMonthlyIncome 
+      };
       if (passwordHash) dataToUpdate.passwordHash = passwordHash;
 
-      await prisma.candidate.update({
+      const candidate = await prisma.candidate.update({
         where: { id: session.id },
-        data: dataToUpdate
+        data: dataToUpdate,
+        include: { applications: { include: { property: true } } }
       });
+
+      // Synchroniser isStudent et document requirements pour toutes ses candidatures actives
+      const isStudent = employmentStatus === "STUDENT";
+      const { syncDocumentRequirements } = await import("@/lib/documentRequirements");
+      for (const app of candidate.applications) {
+        await prisma.application.update({
+          where: { id: app.id },
+          data: { isStudent }
+        });
+        await syncDocumentRequirements(app.id, app.property, candidate);
+      }
     }
 
     return { success: true };

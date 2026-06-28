@@ -68,6 +68,24 @@ export function AccountForm({ initialData, hasOtherRole = false }: { initialData
               <label className="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
               <input name="phone" type="tel" defaultValue={initialData.phone} required className="w-full border border-slate-300 rounded-lg px-4 py-2 text-center focus:ring-2 focus:ring-primary outline-none" />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Situation professionnelle</label>
+              <select name="employmentStatus" defaultValue={initialData.employmentStatus || "CDI"} className="w-full border border-slate-300 rounded-lg px-4 py-2 text-center focus:ring-2 focus:ring-primary outline-none bg-white">
+                <option value="CDI">CDI hors période d'essai</option>
+                <option value="CDI_MOBILITY">CDI en mobilité</option>
+                <option value="PUBLIC_SERVANT">Fonctionnaire</option>
+                <option value="SELF_EMPLOYED">Travailleur indépendant</option>
+                <option value="CDD">CDD</option>
+                <option value="RETIRED">Retraité</option>
+                <option value="STUDENT">Étudiant / apprenti</option>
+                <option value="UNEMPLOYED">Demandeur d'emploi</option>
+                <option value="OTHER">Autre</option>
+              </select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Revenu net mensuel (€)</label>
+              <input name="declaredMonthlyIncome" type="number" min="0" defaultValue={initialData.declaredMonthlyIncome || 0} required className="w-full border border-slate-300 rounded-lg px-4 py-2 text-center focus:ring-2 focus:ring-primary outline-none" />
+            </div>
           </>
         )}
       </div>
