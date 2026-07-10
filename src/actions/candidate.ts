@@ -45,6 +45,7 @@ export async function searchPropertyAction(prevState: any, formData: FormData) {
 const SubmitApplicationSchema = z.object({
   propertyId: z.string(),
   slotIds: z.array(z.string()).min(1, "Veuillez sélectionner au moins un créneau"),
+  openToOtherSlots: z.boolean().optional(),
 });
 
 export async function submitApplicationAction(prevState: any, formData: FormData) {
@@ -54,10 +55,12 @@ export async function submitApplicationAction(prevState: any, formData: FormData
   }
 
   const slotIds = formData.getAll("slotIds") as string[];
+  const openToOtherSlots = formData.get("openToOtherSlots") === "true";
   
   const parsed = SubmitApplicationSchema.safeParse({
     propertyId: formData.get("propertyId"),
     slotIds: slotIds,
+    openToOtherSlots: openToOtherSlots,
   });
 
   if (!parsed.success) {
@@ -90,10 +93,11 @@ export async function submitApplicationAction(prevState: any, formData: FormData
 
   if (existingApp) {
     applicationId = existingApp.id;
-    // Mettre à jour les créneaux
+    // Mettre à jour les créneaux et la flexibilité
     await prisma.application.update({
       where: { id: applicationId },
       data: {
+        openToOtherSlots: data.openToOtherSlots ?? false,
         visitSlots: {
           set: data.slotIds.map(id => ({ id }))
         }
@@ -104,6 +108,7 @@ export async function submitApplicationAction(prevState: any, formData: FormData
       data: {
         propertyId: data.propertyId,
         candidateId: candidateId,
+        openToOtherSlots: data.openToOtherSlots ?? false,
         visitSlots: {
           connect: data.slotIds.map(id => ({ id }))
         }

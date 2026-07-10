@@ -133,11 +133,11 @@ export default async function AdminApplicationPage({
 
   // Rechercher un éventuel commentaire dans l'historique de soumission
   const submissionLog = application.auditLogs.find(
-    log => log.action === "SOUMIS_INCOMPLET" || (log.action === "SOUMISSION_DOSSIER" && log.details.includes("Commentaire :"))
+    log => log.action === "SOUMIS_INCOMPLET" || (log.action === "SOUMISSION_DOSSIER" && log.details?.includes("Commentaire :"))
   );
   
   let candidateCommentText = "";
-  if (submissionLog) {
+  if (submissionLog && submissionLog.details) {
     const parts = submissionLog.details.split("Commentaire : ");
     if (parts.length > 1) {
       candidateCommentText = parts[1];
@@ -729,6 +729,15 @@ export default async function AdminApplicationPage({
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-4 space-y-3">
+              {application.openToOtherSlots && (
+                <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl flex items-start gap-2">
+                  <span className="text-base">💡</span>
+                  <div>
+                    <p className="font-semibold text-amber-900">Candidat flexible</p>
+                    <p className="text-amber-700 mt-0.5">Le candidat est ouvert à la proposition d'autres créneaux de visite.</p>
+                  </div>
+                </div>
+              )}
               {application.visitSlots.length === 0 ? (
                 <p className="text-sm text-slate-500">Aucune visite.</p>
               ) : (

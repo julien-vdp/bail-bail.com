@@ -16,7 +16,15 @@ export default async function VisitsPage({
     where: { code },
     include: {
       visitSlots: {
-        where: { status: "AVAILABLE" },
+        where: { 
+          status: "AVAILABLE",
+          date: { gte: new Date() }
+        },
+        include: {
+          _count: {
+            select: { applications: true }
+          }
+        },
         orderBy: { date: "asc" }
       }
     }
@@ -39,6 +47,20 @@ export default async function VisitsPage({
   if (!candidateData) {
     redirect(`/auth?redirect=/logement/${code}/visites`);
   }
+
+  // Récupérer l'éventuelle candidature existante pour ce candidat et logement
+  const existingApplication = await prisma.application.findFirst({
+    where: {
+      propertyId: property.id,
+      candidateId: simulatedUser.id
+    },
+    include: {
+      visitSlots: true
+    }
+  });
+
+  const initialSelectedSlots = existingApplication?.visitSlots.map(s => s.id) || [];
+  const initialOpenToOtherSlots = existingApplication?.openToOtherSlots || false;
 
   const slotsByDate = property.visitSlots.reduce((acc: Record<string, typeof property.visitSlots>, slot: typeof property.visitSlots[number]) => {
     const dateStr = slot.date.toISOString().split("T")[0];
@@ -108,7 +130,13 @@ export default async function VisitsPage({
           </div>
 
           <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-xl shadow-primary/5">
-            <VisitsForm propertyId={property.id} slotsByDate={slotsByDate} candidateData={candidateData} />
+            <VisitsForm 
+              propertyId={property.id} 
+              slotsByDate={slotsByDate} 
+              candidateData={candidateData} 
+              initialSelectedSlots={initialSelectedSlots}
+              initialOpenToOtherSlots={initialOpenToOtherSlots}
+            />
           </div>
 
         </div>

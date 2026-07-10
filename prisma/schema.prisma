@@ -146,6 +146,7 @@ model Application {
   status      String   @default("NOUVEAU") // NOUVEAU, INCOMPLET, EN_COURS, ACCEPTE, REFUSE
   hasAcceptedConditions Boolean @default(false)
   isStudent   Boolean  @default(false)
+  openToOtherSlots      Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
