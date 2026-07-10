@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { verifySession } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { parseParisDate } from "@/lib/dateUtils";
 
 export async function generateVisitSlotsAction(
   propertyId: string, 
@@ -34,11 +35,8 @@ export async function generateVisitSlotsAction(
     // Parsing times
     // dateStr is 'YYYY-MM-DD'
     // startTime is 'HH:MM'
-    const [startH, startM] = startTime.split(":").map(Number);
-    const [endH, endM] = endTime.split(":").map(Number);
-
-    const startDateTime = new Date(`${dateStr}T${startTime}:00`);
-    const endDateTime = new Date(`${dateStr}T${endTime}:00`);
+    const startDateTime = parseParisDate(dateStr, startTime);
+    const endDateTime = parseParisDate(dateStr, endTime);
 
     if (startDateTime >= endDateTime) {
       return { error: "L'heure de fin doit être postérieure à l'heure de début" };

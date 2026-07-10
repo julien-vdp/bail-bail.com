@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { getParisDate } from "@/lib/dateUtils";
 
 export function VisitsForm({ 
   propertyId, 
@@ -82,7 +83,7 @@ export function VisitsForm({
                       }`}
                     >
                       <span className="font-bold text-lg flex items-center gap-1 select-none">
-                        {format(new Date(slot.date), "HH:mm")}
+                        {format(getParisDate(slot.date), "HH:mm")}
                         {isHighlyDemanded && <span className="text-xs text-amber-600">🔥</span>}
                       </span>
                       <span className="text-xs opacity-80 select-none">{slot.duration} min</span>

@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import Link from "next/link";
 import { ChevronLeft, FileText, User, Calendar } from "lucide-react";
+import { getParisDate } from "@/lib/dateUtils";
 
 export default async function AdminPropertyPage({
   params,
@@ -95,7 +96,7 @@ export default async function AdminPropertyPage({
                           </span>
                           <span className="flex items-center gap-1">
                             <Calendar className="h-4 w-4" />
-                            {app.visitSlots.length > 0 ? format(new Date(app.visitSlots[0].date), "dd MMM HH:mm", { locale: fr }) : "Aucune visite"}
+                            {app.visitSlots.length > 0 ? format(getParisDate(app.visitSlots[0].date), "dd MMM HH:mm", { locale: fr }) : "Aucune visite"}
                           </span>
                         </div>
                       </div>
@@ -123,7 +124,7 @@ export default async function AdminPropertyPage({
                 {property.visitSlots.map(slot => (
                   <div key={slot.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 bg-slate-50 text-sm">
                     <span className="font-medium text-slate-700 capitalize">
-                      {format(new Date(slot.date), "EEE d MMM - HH:mm", { locale: fr })}
+                      {format(getParisDate(slot.date), "EEE d MMM - HH:mm", { locale: fr })}
                     </span>
                     <Badge variant={slot.status === "AVAILABLE" ? "outline" : "default"} className={slot.status === "AVAILABLE" ? "text-success border-success" : ""}>
                       {slot.status === "AVAILABLE" ? "Libre" : "Réservé"}

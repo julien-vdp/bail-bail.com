@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Trash2, CalendarPlus, AlertTriangle, Info, Clock, Users } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { getParisDate } from "@/lib/dateUtils";
 
 interface VisitSlot {
   id: string;
@@ -68,7 +69,7 @@ export function VisitSlotManager({
 
   // Group slots by Date (day)
   const groupedSlots = initialSlots.reduce((acc, slot) => {
-    const day = format(new Date(slot.date), "yyyy-MM-dd");
+    const day = format(getParisDate(slot.date), "yyyy-MM-dd");
     if (!acc[day]) acc[day] = [];
     acc[day].push(slot);
     return acc;
@@ -215,7 +216,7 @@ export function VisitSlotManager({
                         <div key={slot.id} className="relative group border rounded-lg p-3 hover:border-slate-300 bg-white transition-colors">
                           <div className="flex justify-between items-start mb-1">
                             <span className="font-bold text-lg text-slate-900">
-                              {format(new Date(slot.date), "HH:mm")}
+                              {format(getParisDate(slot.date), "HH:mm")}
                             </span>
                             <button
                               onClick={() => handleDelete(slot.id)}

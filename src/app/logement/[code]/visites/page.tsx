@@ -5,6 +5,8 @@ import { getSimulatedUser } from "@/lib/auth";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import Image from "next/image";
+import { getParisDate } from "@/lib/dateUtils";
+import { format } from "date-fns";
 
 export default async function VisitsPage({
   params,
@@ -63,7 +65,8 @@ export default async function VisitsPage({
   const initialOpenToOtherSlots = existingApplication?.openToOtherSlots || false;
 
   const slotsByDate = property.visitSlots.reduce((acc: Record<string, typeof property.visitSlots>, slot: typeof property.visitSlots[number]) => {
-    const dateStr = slot.date.toISOString().split("T")[0];
+    const localDate = getParisDate(slot.date);
+    const dateStr = format(localDate, "yyyy-MM-dd");
     if (!acc[dateStr]) acc[dateStr] = [];
     acc[dateStr].push(slot);
     return acc;

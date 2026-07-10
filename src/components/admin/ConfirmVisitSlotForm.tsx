@@ -7,6 +7,7 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useRouter } from "next/navigation";
+import { getParisDate } from "@/lib/dateUtils";
 
 export function ConfirmVisitSlotForm({ 
   applicationId, 
@@ -26,7 +27,7 @@ export function ConfirmVisitSlotForm({
     }
   }, [state, router]);
 
-  const slotDateStr = format(new Date(slot.date), "EEEE d MMMM à HH:mm", { locale: fr });
+  const slotDateStr = format(getParisDate(slot.date), "EEEE d MMMM à HH:mm", { locale: fr });
 
   if (isBooked && slot.status === "BOOKED") {
     return (

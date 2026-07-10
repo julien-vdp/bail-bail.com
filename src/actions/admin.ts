@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { verifySession } from "@/lib/auth";
+import { getParisDate } from "@/lib/dateUtils";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 async function requireOwnerSession() {
   const session = await verifySession();
@@ -252,12 +255,14 @@ export async function confirmVisitSlotAction(prevState: any, formData: FormData)
     });
   }
 
+  const formattedDate = format(getParisDate(slot.date), "dd/MM/yyyy 'à' HH:mm", { locale: fr });
+
   // Logger l'audit
   await prisma.auditLog.create({
     data: {
       applicationId,
       action: "VISITE_VALIDEE",
-      details: `Créneau de visite validé pour le ${slot.date.toLocaleString('fr-FR')}. Un email a été envoyé au candidat.`
+      details: `Créneau de visite validé pour le ${formattedDate}. Un email a été envoyé au candidat.`
     }
   });
 
@@ -280,8 +285,8 @@ export async function confirmVisitSlotAction(prevState: any, formData: FormData)
       from: '"Bail-Bail Admin" <admin@bail-bail.com>',
       to: application.candidate.email,
       subject: "Confirmation de votre visite - Bail-Bail",
-      text: `Bonjour ${application.candidate.firstName},\n\nVotre visite pour le logement ${application.property.title} a été confirmée pour le ${slot.date.toLocaleString('fr-FR')}.\n\nÀ bientôt !`,
-      html: `<b>Bonjour ${application.candidate.firstName},</b><br><br>Votre visite pour le logement ${application.property.title} a été <b>confirmée</b> pour le ${slot.date.toLocaleString('fr-FR')}.<br><br>À bientôt !`,
+      text: `Bonjour ${application.candidate.firstName},\n\nVotre visite pour le logement ${application.property.title} a été confirmée pour le ${formattedDate}.\n\nÀ bientôt !`,
+      html: `<b>Bonjour ${application.candidate.firstName},</b><br><br>Votre visite pour le logement ${application.property.title} a été <b>confirmée</b> pour le ${formattedDate}.<br><br>À bientôt !`,
     });
 
     console.log("================ EMAILS SIMULÉS ==================");
