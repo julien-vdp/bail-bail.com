@@ -31,7 +31,7 @@ export function Header({ session, hasOtherRole = false }: { session: any, hasOth
           {session ? (
             <>
               {hasOtherRole && <SwitchRoleButton variant="ghost" />}
-              {session.role === "OWNER" && (
+              {session.role === "OWNER" && (session.email === "julien.favaux@gmail.com" || session.originalEmail === "julien.favaux@gmail.com") && (
                 <Link href="/db-explorer" className="text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors flex items-center gap-1 mx-2" title="Explorateur & Audit">
                   <Database className="w-4 h-4" /> Stockage
                 </Link>

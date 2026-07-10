@@ -2,11 +2,21 @@
 
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { verifySession } from "@/lib/auth";
 
 const PASSWORD = "julien-admin";
 const COOKIE_NAME = "db_explorer_auth";
 
+async function isAuthorizedAdmin() {
+  const session = await verifySession();
+  return session?.email === "julien.favaux@gmail.com" || session?.originalEmail === "julien.favaux@gmail.com";
+}
+
 export async function loginToDbExplorer(password: string) {
+  if (!(await isAuthorizedAdmin())) {
+    return { error: "Non autorisé" };
+  }
+
   if (password === PASSWORD) {
     const cookieStore = await cookies();
     cookieStore.set(COOKIE_NAME, "true", { 
@@ -26,6 +36,9 @@ export async function logoutFromDbExplorer() {
 }
 
 export async function checkDbAuth() {
+  if (!(await isAuthorizedAdmin())) {
+    return false;
+  }
   const cookieStore = await cookies();
   return cookieStore.get(COOKIE_NAME)?.value === "true";
 }
