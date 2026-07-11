@@ -230,13 +230,7 @@ export async function confirmVisitSlotAction(prevState: any, formData: FormData)
     return { error: "Données introuvables ou non autorisées" };
   }
 
-  // Mettre le slot en BOOKED
-  await prisma.visitSlot.update({
-    where: { id: slotId },
-    data: { status: "BOOKED" }
-  });
-
-  // Déconnecter les autres slots de la candidature pour clarifier
+  // 1. Déconnecter les autres slots de la candidature pour clarifier
   const otherSlots = await prisma.visitSlot.findMany({
     where: {
       applications: { some: { id: applicationId } },
@@ -253,7 +247,42 @@ export async function confirmVisitSlotAction(prevState: any, formData: FormData)
         }
       }
     });
+
+    // Mettre à jour le statut de chacun de ces autres créneaux libérés
+    for (const os of otherSlots) {
+      const count = await prisma.application.count({
+        where: { visitSlots: { some: { id: os.id } } }
+      });
+      await prisma.visitSlot.update({
+        where: { id: os.id },
+        data: {
+          status: count >= os.maxCandidates ? "BOOKED" : "AVAILABLE"
+        }
+      });
+    }
   }
+
+  // 2. Connecter le créneau sélectionné à la candidature
+  await prisma.application.update({
+    where: { id: applicationId },
+    data: {
+      visitSlots: {
+        connect: { id: slotId }
+      }
+    }
+  });
+
+  // 3. Mettre à jour le statut du créneau choisi
+  const connectedAppsCount = await prisma.application.count({
+    where: { visitSlots: { some: { id: slotId } } }
+  });
+
+  await prisma.visitSlot.update({
+    where: { id: slotId },
+    data: {
+      status: connectedAppsCount >= slot.maxCandidates ? "BOOKED" : "AVAILABLE"
+    }
+  });
 
   const formattedDate = format(getParisDate(slot.date), "dd/MM/yyyy 'à' HH:mm", { locale: fr });
 
@@ -457,12 +486,16 @@ export async function modifyVisitSlotAction(
         }
       });
 
-      // 2. Libérer le créneau qui était réservé (status = AVAILABLE)
-      const bookedSlots = currentSlots.filter(s => s.status === "BOOKED");
-      if (bookedSlots.length > 0) {
-        await prisma.visitSlot.updateMany({
-          where: { id: { in: bookedSlots.map(s => s.id) } },
-          data: { status: "AVAILABLE" }
+      // 2. Mettre à jour le statut des anciens créneaux libérés
+      for (const slot of currentSlots) {
+        const count = await prisma.application.count({
+          where: { visitSlots: { some: { id: slot.id } } }
+        });
+        await prisma.visitSlot.update({
+          where: { id: slot.id },
+          data: {
+            status: count >= slot.maxCandidates ? "BOOKED" : "AVAILABLE"
+          }
         });
       }
 
@@ -476,10 +509,15 @@ export async function modifyVisitSlotAction(
         }
       });
 
-      // 4. Réserver le nouveau créneau
+      // 4. Mettre à jour le statut du nouveau créneau
+      const newSlotCount = await prisma.application.count({
+        where: { visitSlots: { some: { id: slotId } } }
+      });
       await prisma.visitSlot.update({
         where: { id: slotId },
-        data: { status: "BOOKED" }
+        data: {
+          status: newSlotCount >= newSlot.maxCandidates ? "BOOKED" : "AVAILABLE"
+        }
       });
 
       // 5. Nettoyer les propositions pendantes

@@ -75,15 +75,20 @@ export default async function AdminApplicationPage({
   const propertySlots = await prisma.visitSlot.findMany({
     where: {
       propertyId: application.propertyId,
-      status: "AVAILABLE",
+    },
+    include: {
+      applications: true,
     },
     orderBy: { date: "asc" }
   });
 
-  const availableSlots = propertySlots.map(slot => ({
-    id: slot.id,
-    dateStr: format(getParisDate(slot.date), "EEEE d MMMM 'à' HH:mm", { locale: fr }),
-  }));
+  // Filtrer pour n'afficher que les créneaux non complets et non déjà choisis par ce candidat
+  const availableSlots = propertySlots
+    .filter(slot => slot.applications.length < slot.maxCandidates && !slot.applications.some(app => app.id === application.id))
+    .map(slot => ({
+      id: slot.id,
+      dateStr: format(getParisDate(slot.date), "EEEE d MMMM 'à' HH:mm", { locale: fr }),
+    }));
 
   const getStatusBadge = (status: string) => {
     switch (status) {

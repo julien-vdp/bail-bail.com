@@ -767,12 +767,16 @@ export async function respondToVisitProposalAction(applicationId: string, accept
         }
       });
 
-      // 2. Libérer le créneau qui était réservé (status = AVAILABLE)
-      const bookedSlots = currentSlots.filter(s => s.status === "BOOKED");
-      if (bookedSlots.length > 0) {
-        await prisma.visitSlot.updateMany({
-          where: { id: { in: bookedSlots.map(s => s.id) } },
-          data: { status: "AVAILABLE" }
+      // 2. Mettre à jour le statut des anciens créneaux libérés
+      for (const slot of currentSlots) {
+        const count = await prisma.application.count({
+          where: { visitSlots: { some: { id: slot.id } } }
+        });
+        await prisma.visitSlot.update({
+          where: { id: slot.id },
+          data: {
+            status: count >= slot.maxCandidates ? "BOOKED" : "AVAILABLE"
+          }
         });
       }
 
@@ -786,10 +790,15 @@ export async function respondToVisitProposalAction(applicationId: string, accept
         }
       });
 
-      // 4. Réserver le nouveau créneau
+      // 4. Mettre à jour le statut du nouveau créneau
+      const newSlotCount = await prisma.application.count({
+        where: { visitSlots: { some: { id: application.proposedSlotId! } } }
+      });
       await prisma.visitSlot.update({
         where: { id: application.proposedSlotId! },
-        data: { status: "BOOKED" }
+        data: {
+          status: newSlotCount >= application.proposedSlot.maxCandidates ? "BOOKED" : "AVAILABLE"
+        }
       });
 
       // 5. Nettoyer les propositions pendantes
