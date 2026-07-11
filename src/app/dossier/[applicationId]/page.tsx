@@ -16,6 +16,7 @@ import { CandidateProfileForm } from "@/components/CandidateProfileForm";
 import { ChatModule } from "@/components/ChatModule";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { getParisDate } from "@/lib/dateUtils";
 
 export default async function DossierPage({
   params,
@@ -66,7 +67,7 @@ export default async function DossierPage({
     senderRole: msg.senderRole as "CANDIDATE" | "OWNER",
     senderName: msg.senderName,
     content: msg.content,
-    formattedDate: format(msg.createdAt, "d MMMM 'à' HH:mm", { locale: fr })
+    formattedDate: format(getParisDate(msg.createdAt), "d MMMM 'à' HH:mm", { locale: fr })
   }));
 
   // --- ÉTAPE 3 : Remplir le profil professionnel si manquant ou en cours d'édition ---

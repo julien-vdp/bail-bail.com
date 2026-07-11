@@ -14,6 +14,7 @@ import { generateDocumentRequirements } from "@/lib/documentRequirements";
 import Image from "next/image";
 import { verifySession } from "@/lib/auth";
 import { ChatModule } from "@/components/ChatModule";
+import { getParisDate } from "@/lib/dateUtils";
 
 export default async function AdminApplicationPage({
   params,
@@ -65,7 +66,7 @@ export default async function AdminApplicationPage({
     senderRole: msg.senderRole as "CANDIDATE" | "OWNER",
     senderName: msg.senderName,
     content: msg.content,
-    formattedDate: format(msg.createdAt, "d MMMM 'à' HH:mm", { locale: fr })
+    formattedDate: format(getParisDate(msg.createdAt), "d MMMM 'à' HH:mm", { locale: fr })
   }));
 
   const getStatusBadge = (status: string) => {
