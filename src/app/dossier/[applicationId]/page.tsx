@@ -13,6 +13,9 @@ import { DocumentViewerModal } from "@/components/DocumentViewerModal";
 import { verifySession } from "@/lib/auth";
 import { generateDocumentRequirements } from "@/lib/documentRequirements";
 import { CandidateProfileForm } from "@/components/CandidateProfileForm";
+import { ChatModule } from "@/components/ChatModule";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 export default async function DossierPage({
   params,
@@ -42,6 +45,9 @@ export default async function DossierPage({
         include: {
           documents: true,
         }
+      },
+      messages: {
+        orderBy: { createdAt: "asc" }
       }
     }
   });
@@ -52,6 +58,16 @@ export default async function DossierPage({
   if (application.candidateId !== session.id && application.candidate.email !== session.email) {
     notFound();
   }
+
+  // Mappe les messages pour l'affichage avec date formatée
+  const formattedMessages = (application.messages || []).map(msg => ({
+    id: msg.id,
+    senderId: msg.senderId,
+    senderRole: msg.senderRole as "CANDIDATE" | "OWNER",
+    senderName: msg.senderName,
+    content: msg.content,
+    formattedDate: format(msg.createdAt, "d MMMM 'à' HH:mm", { locale: fr })
+  }));
 
   // --- ÉTAPE 3 : Remplir le profil professionnel si manquant ou en cours d'édition ---
   const searchParamsResolved = await searchParams;
@@ -521,6 +537,14 @@ export default async function DossierPage({
               </div>
 
             </div>
+
+            {/* Messagerie */}
+            <ChatModule
+              applicationId={application.id}
+              currentUserId={session.id}
+              currentRole="CANDIDATE"
+              messages={formattedMessages}
+            />
           </div>
 
           {/* Sidebar / Recap */}

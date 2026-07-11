@@ -12,6 +12,8 @@ import { DocumentViewerModal } from "@/components/admin/DocumentViewerModal";
 import { ConfirmVisitSlotForm } from "@/components/admin/ConfirmVisitSlotForm";
 import { generateDocumentRequirements } from "@/lib/documentRequirements";
 import Image from "next/image";
+import { verifySession } from "@/lib/auth";
+import { ChatModule } from "@/components/ChatModule";
 
 export default async function AdminApplicationPage({
   params,
@@ -42,6 +44,9 @@ export default async function AdminApplicationPage({
       visitSlots: true,
       auditLogs: {
         orderBy: { createdAt: "desc" }
+      },
+      messages: {
+        orderBy: { createdAt: "asc" }
       }
     }
   });
@@ -49,6 +54,19 @@ export default async function AdminApplicationPage({
   if (!application) {
     notFound();
   }
+
+  const session = await verifySession();
+  const currentUserId = session?.id || "";
+
+  // Mappe les messages pour l'affichage avec date formatée
+  const formattedMessages = (application.messages || []).map(msg => ({
+    id: msg.id,
+    senderId: msg.senderId,
+    senderRole: msg.senderRole as "CANDIDATE" | "OWNER",
+    senderName: msg.senderName,
+    content: msg.content,
+    formattedDate: format(msg.createdAt, "d MMMM 'à' HH:mm", { locale: fr })
+  }));
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -443,6 +461,14 @@ export default async function AdminApplicationPage({
               </div>
             </CardContent>
           </Card>
+
+          {/* Messagerie */}
+          <ChatModule
+            applicationId={application.id}
+            currentUserId={currentUserId}
+            currentRole="OWNER"
+            messages={formattedMessages}
+          />
         </div>
 
         <div className="space-y-6">

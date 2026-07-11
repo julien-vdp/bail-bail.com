@@ -154,6 +154,7 @@ model Application {
   visitSlots           VisitSlot[]
   auditLogs            AuditLog[]
   documentRequirements DocumentRequirement[]
+  messages             Message[]
 }
 
 model DocumentRequirement {
@@ -203,3 +204,15 @@ model AuditLog {
   details       String?
   createdAt     DateTime    @default(now())
 }
+
+model Message {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  senderId      String
+  senderRole    String      // "CANDIDATE" or "OWNER"
+  senderName    String
+  content       String
+  createdAt     DateTime    @default(now())
+}
+
