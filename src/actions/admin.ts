@@ -401,3 +401,184 @@ export async function updateDocumentStatusAction(prevState: any, formData: FormD
     return { error: "Erreur lors de la mise à jour." };
   }
 }
+
+export async function modifyVisitSlotAction(
+  applicationId: string,
+  slotId: string,
+  type: "PROPOSE" | "IMPOSE",
+  message: string
+) {
+  const session = await requireOwnerSession();
+  if (!session) return { error: "Non autorisé" };
+
+  if (!applicationId || !slotId) {
+    return { error: "Paramètres manquants" };
+  }
+
+  try {
+    const application = await prisma.application.findUnique({
+      where: { id: applicationId },
+      include: {
+        candidate: true,
+        property: true,
+        visitSlots: true,
+      }
+    });
+
+    const newSlot = await prisma.visitSlot.findUnique({
+      where: { id: slotId }
+    });
+
+    if (!application || !newSlot) {
+      return { error: "Candidature ou créneau introuvable" };
+    }
+
+    if (application.property.ownerId !== session.id || newSlot.propertyId !== application.propertyId) {
+      return { error: "Non autorisé" };
+    }
+
+    const newSlotDateStr = format(getParisDate(newSlot.date), "dd/MM/yyyy 'à' HH:mm", { locale: fr });
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bail-bail.com";
+    const appUrlClean = appUrl.endsWith("/") ? appUrl.slice(0, -1) : appUrl;
+
+    let emailSubject = "";
+    let emailText = "";
+    let emailHtml = "";
+
+    if (type === "IMPOSE") {
+      // 1. Déconnecter les créneaux existants de la candidature
+      const currentSlots = application.visitSlots;
+      await prisma.application.update({
+        where: { id: applicationId },
+        data: {
+          visitSlots: {
+            disconnect: currentSlots.map(s => ({ id: s.id }))
+          }
+        }
+      });
+
+      // 2. Libérer le créneau qui était réservé (status = AVAILABLE)
+      const bookedSlots = currentSlots.filter(s => s.status === "BOOKED");
+      if (bookedSlots.length > 0) {
+        await prisma.visitSlot.updateMany({
+          where: { id: { in: bookedSlots.map(s => s.id) } },
+          data: { status: "AVAILABLE" }
+        });
+      }
+
+      // 3. Connecter le nouveau créneau
+      await prisma.application.update({
+        where: { id: applicationId },
+        data: {
+          visitSlots: {
+            connect: { id: slotId }
+          }
+        }
+      });
+
+      // 4. Réserver le nouveau créneau
+      await prisma.visitSlot.update({
+        where: { id: slotId },
+        data: { status: "BOOKED" }
+      });
+
+      // 5. Nettoyer les propositions pendantes
+      await prisma.application.update({
+        where: { id: applicationId },
+        data: {
+          proposedSlotId: null,
+          proposalMessage: null,
+          proposalStatus: null
+        }
+      });
+
+      // 6. Logger l'audit
+      await prisma.auditLog.create({
+        data: {
+          applicationId,
+          action: "VISITE_MODIFIEE_IMPOSEE",
+          details: `Créneau de visite modifié et imposé par le propriétaire pour le ${newSlotDateStr}.${message ? ` Message : "${message}"` : ""}`
+        }
+      });
+
+      emailSubject = "Modification de votre créneau de visite - Bail-Bail";
+      emailText = `Bonjour ${application.candidate.firstName},\n\nLe propriétaire a modifié votre créneau de visite pour le logement "${application.property.title}".\n\nNouveau créneau confirmé : Le ${newSlotDateStr}.\n${message ? `\nMessage du propriétaire : "${message}"` : ""}\n\nCordialement,\nL'équipe Bail-Bail.`;
+      emailHtml = `<b>Bonjour ${application.candidate.firstName},</b><br><br>Le propriétaire a <b>modifié votre créneau de visite</b> pour le logement <b>${application.property.title}</b>.<br><br><b>Nouveau créneau confirmé :</b> Le ${newSlotDateStr}.<br>${message ? `<br><b>Message du propriétaire :</b><br><div style="background: #f8fafc; border-left: 4px solid #1463FF; padding: 15px; margin: 15px 0; border-radius: 8px; font-style: italic;">"${message}"</div>` : ""}<br>Cordialement,<br>L'équipe Bail-Bail.`;
+
+    } else {
+      // PROPOSE
+      // 1. Enregistrer la proposition
+      await prisma.application.update({
+        where: { id: applicationId },
+        data: {
+          proposedSlotId: slotId,
+          proposalMessage: message.trim() || null,
+          proposalStatus: "PENDING"
+        }
+      });
+
+      // 2. Logger l'audit
+      await prisma.auditLog.create({
+        data: {
+          applicationId,
+          action: "VISITE_PROPOSEE",
+          details: `Proposition d'un nouveau créneau de visite pour le ${newSlotDateStr}.${message ? ` Message : "${message}"` : ""}`
+        }
+      });
+
+      emailSubject = "Proposition d'un nouveau créneau de visite - Bail-Bail";
+      emailText = `Bonjour ${application.candidate.firstName},\n\nLe propriétaire du logement "${application.property.title}" vous propose un autre créneau de visite : le ${newSlotDateStr}.\n${message ? `\nMessage : "${message}"` : ""}\n\nVous pouvez accepter ou refuser ce créneau depuis votre espace personnel : ${appUrlClean}/dossier/${applicationId}\n\nCordialement,\nL'équipe Bail-Bail.`;
+      emailHtml = `<b>Bonjour ${application.candidate.firstName},</b><br><br>Le propriétaire du logement <b>${application.property.title}</b> vous propose un <b>autre créneau de visite</b> : le ${newSlotDateStr}.<br>${message ? `<br><b>Message du propriétaire :</b><br><div style="background: #f8fafc; border-left: 4px solid #1463FF; padding: 15px; margin: 15px 0; border-radius: 8px; font-style: italic;">"${message}"</div>` : ""}<br><div style="text-align: center; margin: 30px 0;"><a href="${appUrlClean}/dossier/${applicationId}" style="padding: 12px 24px; background: #1463FF; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accepter ou Refuser la proposition</a></div><br>Cordialement,<br>L'équipe Bail-Bail.`;
+    }
+
+    // Envoi de l'email
+    try {
+      const nodemailer = require("nodemailer");
+      let transporter;
+
+      if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+        transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: Number(process.env.SMTP_PORT) || 587,
+          secure: process.env.SMTP_SECURE === "true",
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASSWORD,
+          },
+        });
+      } else {
+        const testAccount = await nodemailer.createTestAccount();
+        transporter = nodemailer.createTransport({
+          host: "smtp.ethereal.email",
+          port: 587,
+          secure: false,
+          auth: { user: testAccount.user, pass: testAccount.pass },
+        });
+      }
+
+      const info = await transporter.sendMail({
+        from: process.env.EMAIL_FROM || '"Bail-Bail Admin" <admin@bail-bail.com>',
+        to: application.candidate.email,
+        subject: emailSubject,
+        text: emailText,
+        html: emailHtml,
+      });
+
+      if (!process.env.SMTP_HOST) {
+        console.log(`================ EMAILS SIMULÉS (${type}) ==================`);
+        console.log("Email envoyé ! Visualisez-le ici : %s", nodemailer.getTestMessageUrl(info));
+        console.log("===================================================================");
+      }
+    } catch (err) {
+      console.error("Erreur d'envoi d'email pour changement de créneau :", err);
+    }
+
+    revalidatePath(`/admin/dossiers/${applicationId}`);
+    revalidatePath(`/dossier/${applicationId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error modifyVisitSlotAction:", error);
+    return { error: "Erreur lors de la modification du créneau" };
+  }
+}

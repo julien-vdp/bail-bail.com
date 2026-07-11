@@ -718,3 +718,168 @@ export async function saveCandidateProfileAction(prevState: any, formData: FormD
   }
 }
 
+export async function respondToVisitProposalAction(applicationId: string, accept: boolean) {
+  const session = await verifySession();
+  if (!session || session.role !== "CANDIDATE") {
+    return { error: "Non autorisé" };
+  }
+
+  try {
+    const { format } = await import("date-fns");
+    const { fr } = await import("date-fns/locale");
+    const { getParisDate } = await import("@/lib/dateUtils");
+
+    const application = await prisma.application.findUnique({
+      where: { id: applicationId },
+      include: {
+        candidate: true,
+        proposedSlot: true,
+        visitSlots: true,
+        property: {
+          include: {
+            owner: true,
+          },
+        },
+      },
+    });
+
+    if (!application || !application.proposedSlot) {
+      return { error: "Proposition introuvable" };
+    }
+
+    if (application.candidateId !== session.id && application.candidate.email !== session.email) {
+      return { error: "Non autorisé" };
+    }
+
+    const slotDateStr = format(getParisDate(application.proposedSlot.date), "dd/MM/yyyy 'à' HH:mm", { locale: fr });
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bail-bail.com";
+    const appUrlClean = appUrl.endsWith("/") ? appUrl.slice(0, -1) : appUrl;
+
+    if (accept) {
+      // 1. Déconnecter les créneaux existants de la candidature
+      const currentSlots = application.visitSlots;
+      await prisma.application.update({
+        where: { id: applicationId },
+        data: {
+          visitSlots: {
+            disconnect: currentSlots.map(s => ({ id: s.id }))
+          }
+        }
+      });
+
+      // 2. Libérer le créneau qui était réservé (status = AVAILABLE)
+      const bookedSlots = currentSlots.filter(s => s.status === "BOOKED");
+      if (bookedSlots.length > 0) {
+        await prisma.visitSlot.updateMany({
+          where: { id: { in: bookedSlots.map(s => s.id) } },
+          data: { status: "AVAILABLE" }
+        });
+      }
+
+      // 3. Connecter le nouveau créneau proposé
+      await prisma.application.update({
+        where: { id: applicationId },
+        data: {
+          visitSlots: {
+            connect: { id: application.proposedSlotId! }
+          }
+        }
+      });
+
+      // 4. Réserver le nouveau créneau
+      await prisma.visitSlot.update({
+        where: { id: application.proposedSlotId! },
+        data: { status: "BOOKED" }
+      });
+
+      // 5. Nettoyer les propositions pendantes
+      await prisma.application.update({
+        where: { id: applicationId },
+        data: {
+          proposedSlotId: null,
+          proposalMessage: null,
+          proposalStatus: "ACCEPTED"
+        }
+      });
+
+      // 6. Logger l'audit
+      await prisma.auditLog.create({
+        data: {
+          applicationId,
+          action: "VISITE_PROPOSITION_ACCEPTEE",
+          details: `Le candidat a accepté la proposition de créneau pour le ${slotDateStr}.`
+        }
+      });
+
+      // 7. Notifier le propriétaire par email
+      const owner = application.property.owner;
+      if (owner && owner.email) {
+        try {
+          await sendEmail({
+            to: owner.email,
+            subject: `Proposition de visite acceptée - ${application.property.title}`,
+            html: `
+              <p>Bonjour <strong>${owner.name}</strong>,</p>
+              <p>Le candidat <strong>${application.candidate.firstName} ${application.candidate.lastName}</strong> a <strong>accepté</strong> votre proposition de créneau de visite.</p>
+              <p>Le nouveau créneau de visite est validé pour le : <strong>${slotDateStr}</strong>.</p>
+              <p>Pour voir le dossier :</p>
+              <p><a href="${appUrlClean}/admin/dossiers/${applicationId}">Accéder au dossier de candidature</a></p>
+            `,
+          });
+        } catch (err) {
+          console.error("Erreur envoi email acceptation proposition :", err);
+        }
+      }
+
+    } else {
+      // REJECT
+      // 1. Mettre à jour l'application en refusant
+      await prisma.application.update({
+        where: { id: applicationId },
+        data: {
+          proposedSlotId: null,
+          proposalMessage: null,
+          proposalStatus: "REJECTED"
+        }
+      });
+
+      // 2. Logger l'audit
+      await prisma.auditLog.create({
+        data: {
+          applicationId,
+          action: "VISITE_PROPOSITION_REFUSEE",
+          details: `Le candidat a refusé la proposition de créneau pour le ${slotDateStr}.`
+        }
+      });
+
+      // 3. Notifier le propriétaire par email
+      const owner = application.property.owner;
+      if (owner && owner.email) {
+        try {
+          await sendEmail({
+            to: owner.email,
+            subject: `Proposition de visite refusée - ${application.property.title}`,
+            html: `
+              <p>Bonjour <strong>${owner.name}</strong>,</p>
+              <p>Le candidat <strong>${application.candidate.firstName} ${application.candidate.lastName}</strong> a <strong>refusé</strong> votre proposition de créneau de visite pour le ${slotDateStr}.</p>
+              <p>Son créneau précédent reste inchangé (s'il en avait un).</p>
+              <p>Pour proposer une autre date :</p>
+              <p><a href="${appUrlClean}/admin/dossiers/${applicationId}">Accéder au dossier de candidature</a></p>
+            `,
+          });
+        } catch (err) {
+          console.error("Erreur envoi email refus proposition :", err);
+        }
+      }
+    }
+
+    revalidatePath(`/dossier/${applicationId}`);
+    revalidatePath(`/admin/dossiers/${applicationId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error in respondToVisitProposalAction:", error);
+    return { error: "Erreur lors de la réponse à la proposition." };
+  }
+}
+

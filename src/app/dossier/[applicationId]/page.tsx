@@ -17,6 +17,7 @@ import { ChatModule } from "@/components/ChatModule";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getParisDate } from "@/lib/dateUtils";
+import { VisitProposalBanner } from "@/components/VisitProposalBanner";
 
 export default async function DossierPage({
   params,
@@ -49,7 +50,8 @@ export default async function DossierPage({
       },
       messages: {
         orderBy: { createdAt: "asc" }
-      }
+      },
+      proposedSlot: true
     }
   });
 
@@ -324,6 +326,15 @@ export default async function DossierPage({
             Statut : <span className="text-primary capitalize">{application.status.toLowerCase().replace('_', ' ')}</span>
           </div>
         </div>
+
+        {/* Proposition d'un autre créneau */}
+        {application.proposedSlotId && application.proposedSlot && (
+          <VisitProposalBanner
+            applicationId={application.id}
+            proposedSlotDateStr={format(getParisDate(application.proposedSlot.date), "EEEE d MMMM à HH:mm", { locale: fr })}
+            proposalMessage={application.proposalMessage}
+          />
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           

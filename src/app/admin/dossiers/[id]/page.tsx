@@ -15,6 +15,7 @@ import Image from "next/image";
 import { verifySession } from "@/lib/auth";
 import { ChatModule } from "@/components/ChatModule";
 import { getParisDate } from "@/lib/dateUtils";
+import { ModifyVisitSlotModal } from "@/components/admin/ModifyVisitSlotModal";
 
 export default async function AdminApplicationPage({
   params,
@@ -43,6 +44,7 @@ export default async function AdminApplicationPage({
         orderBy: { createdAt: "desc" }
       },
       visitSlots: true,
+      proposedSlot: true,
       auditLogs: {
         orderBy: { createdAt: "desc" }
       },
@@ -67,6 +69,20 @@ export default async function AdminApplicationPage({
     senderName: msg.senderName,
     content: msg.content,
     formattedDate: format(getParisDate(msg.createdAt), "d MMMM 'à' HH:mm", { locale: fr })
+  }));
+
+  // Récupérer les créneaux disponibles du logement pour la modification
+  const propertySlots = await prisma.visitSlot.findMany({
+    where: {
+      propertyId: application.propertyId,
+      status: "AVAILABLE",
+    },
+    orderBy: { date: "asc" }
+  });
+
+  const availableSlots = propertySlots.map(slot => ({
+    id: slot.id,
+    dateStr: format(getParisDate(slot.date), "EEEE d MMMM 'à' HH:mm", { locale: fr }),
   }));
 
   const getStatusBadge = (status: string) => {
@@ -777,6 +793,33 @@ export default async function AdminApplicationPage({
                   />
                 ))
               )}
+
+              {application.proposedSlotId && application.proposedSlot && (
+                <div className="p-3 bg-blue-50/50 border border-blue-200 text-blue-800 text-xs rounded-2xl flex flex-col gap-1 shadow-sm">
+                  <div className="flex items-center gap-1.5 font-bold text-blue-900">
+                    <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+                    Proposition en attente
+                  </div>
+                  <p>Vous avez proposé le créneau : <strong>{format(getParisDate(application.proposedSlot.date), "EEEE d MMMM 'à' HH:mm", { locale: fr })}</strong></p>
+                  {application.proposalMessage && (
+                    <p className="italic text-slate-600 bg-white/85 px-2.5 py-1.5 rounded-lg border border-blue-100/50 mt-1 font-medium">
+                      &quot;{application.proposalMessage}&quot;
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="pt-2 flex justify-end border-t border-slate-100 mt-2">
+                <ModifyVisitSlotModal
+                  applicationId={application.id}
+                  availableSlots={availableSlots}
+                  currentSlotDateStr={
+                    application.visitSlots.find((s) => s.status === "BOOKED")
+                      ? format(getParisDate(application.visitSlots.find((s) => s.status === "BOOKED")!.date), "EEEE d MMMM 'à' HH:mm", { locale: fr })
+                      : undefined
+                  }
+                />
+              </div>
             </CardContent>
           </Card>
         </div>

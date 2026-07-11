@@ -83,6 +83,7 @@ model VisitSlot {
   updatedAt     DateTime @updatedAt
 
   applications Application[]
+  proposedApplications Application[] @relation(name: "ProposedSlot")
 }
 
 model Candidate {
@@ -155,6 +156,11 @@ model Application {
   auditLogs            AuditLog[]
   documentRequirements DocumentRequirement[]
   messages             Message[]
+
+  proposedSlotId       String?
+  proposedSlot         VisitSlot?  @relation(name: "ProposedSlot", fields: [proposedSlotId], references: [id], onDelete: SetNull)
+  proposalMessage      String?
+  proposalStatus       String?     // PENDING, ACCEPTED, REJECTED
 }
 
 model DocumentRequirement {
