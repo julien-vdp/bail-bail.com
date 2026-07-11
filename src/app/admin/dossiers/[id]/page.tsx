@@ -391,7 +391,7 @@ export default async function AdminApplicationPage({
                                 Filigrane : {doc.candidateApproved ? "Validé par candidat" : "Non validé"}
                               </span>
                               {doc.createdAt && (
-                                <span className="text-[10px] text-slate-400 font-medium">Déposé le {format(new Date(doc.createdAt), "dd/MM/yyyy à HH:mm", { locale: fr })}</span>
+                                <span className="text-[10px] text-slate-400 font-medium">Déposé le {format(getParisDate(doc.createdAt), "dd/MM/yyyy à HH:mm", { locale: fr })}</span>
                               )}
                             </div>
                             {doc.candidateComment && (
@@ -469,7 +469,7 @@ export default async function AdminApplicationPage({
                     <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-4 rounded border border-slate-200 shadow-sm">
                       <div className="flex items-center justify-between mb-1">
                         <div className="font-bold text-slate-900 text-sm">{log.action}</div>
-                        <time className="text-xs text-slate-500">{format(new Date(log.createdAt), "dd/MM HH:mm")}</time>
+                        <time className="text-xs text-slate-500">{format(getParisDate(log.createdAt), "dd/MM HH:mm")}</time>
                       </div>
                       <div className="text-slate-500 text-sm">{log.details}</div>
                     </div>
