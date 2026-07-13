@@ -149,7 +149,7 @@ export default async function AdminPropertyPage({
                   });
 
                   const confirmedCount = confirmedApps.length;
-                  const isSlotFull = slot.status === "BOOKED" || confirmedCount >= slot.maxCandidates;
+                  const isSlotFull = confirmedCount >= slot.maxCandidates || (confirmedCount === 0 && slot.status === "BOOKED");
                   const isPartiallyBooked = confirmedCount > 0 && confirmedCount < slot.maxCandidates;
                   
                   return (
