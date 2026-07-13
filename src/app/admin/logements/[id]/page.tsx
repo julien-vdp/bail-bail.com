@@ -140,13 +140,12 @@ export default async function AdminPropertyPage({
                 {property.visitSlots.map(slot => {
                   // Calculer les candidats confirmés (explicitement OU implicitement)
                   const confirmedApps = slot.applications.filter(app => {
-                    const isExplicitlyConfirmed = app.confirmedSlotId === slot.id;
-                    const isImplicitlyConfirmed = 
-                      !app.confirmedSlotId && 
-                      app.visitSlots.length === 1 && 
-                      (app.status === "ACCEPTE" || app.status === "EN_COURS" || slot.status === "BOOKED");
-                      
-                    return isExplicitlyConfirmed || isImplicitlyConfirmed;
+                    const confirmedId = app.confirmedSlotId || (
+                      (app.status === "ACCEPTE" || app.status === "EN_COURS") 
+                        ? app.visitSlots[0]?.id 
+                        : null
+                    );
+                    return confirmedId === slot.id;
                   });
 
                   const confirmedCount = confirmedApps.length;

@@ -117,8 +117,8 @@ export default async function AdminApplicationPage({
   };
 
   let confirmedSlotId = application.confirmedSlotId;
-  if (!confirmedSlotId && application.visitSlots.length === 1 && (application.status === "ACCEPTE" || application.status === "EN_COURS")) {
-    confirmedSlotId = application.visitSlots[0].id;
+  if (!confirmedSlotId && (application.status === "ACCEPTE" || application.status === "EN_COURS")) {
+    confirmedSlotId = application.visitSlots[0]?.id || null;
   }
 
   // Logic to compute dynamic requirements, completeness, and coherence metrics
@@ -825,8 +825,8 @@ export default async function AdminApplicationPage({
                   currentSlotDateStr={
                     application.confirmedSlot
                       ? format(getParisDate(application.confirmedSlot.date), "EEEE d MMMM 'à' HH:mm", { locale: fr })
-                      : (confirmedSlotId && application.visitSlots.length === 1
-                          ? format(getParisDate(application.visitSlots[0].date), "EEEE d MMMM 'à' HH:mm", { locale: fr })
+                      : (confirmedSlotId
+                          ? format(getParisDate(application.visitSlots.find(s => s.id === confirmedSlotId)?.date || application.visitSlots[0]?.date), "EEEE d MMMM 'à' HH:mm", { locale: fr })
                           : undefined)
                   }
                 />
