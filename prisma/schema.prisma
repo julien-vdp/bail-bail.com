@@ -82,7 +82,8 @@ model VisitSlot {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  applications Application[]
+  applications         Application[]
+  confirmedApplications Application[] @relation(name: "ConfirmedSlot")
   proposedApplications Application[] @relation(name: "ProposedSlot")
 }
 
@@ -156,6 +157,9 @@ model Application {
   auditLogs            AuditLog[]
   documentRequirements DocumentRequirement[]
   messages             Message[]
+
+  confirmedSlotId      String?
+  confirmedSlot        VisitSlot?  @relation(name: "ConfirmedSlot", fields: [confirmedSlotId], references: [id], onDelete: SetNull)
 
   proposedSlotId       String?
   proposedSlot         VisitSlot?  @relation(name: "ProposedSlot", fields: [proposedSlotId], references: [id], onDelete: SetNull)

@@ -780,13 +780,14 @@ export async function respondToVisitProposalAction(applicationId: string, accept
         });
       }
 
-      // 3. Connecter le nouveau créneau proposé
+      // 3. Connecter le nouveau créneau proposé et l'enregistrer comme validé
       await prisma.application.update({
         where: { id: applicationId },
         data: {
           visitSlots: {
             connect: { id: application.proposedSlotId! }
-          }
+          },
+          confirmedSlotId: application.proposedSlotId!
         }
       });
 

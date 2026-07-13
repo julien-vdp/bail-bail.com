@@ -45,6 +45,7 @@ export default async function AdminApplicationPage({
       },
       visitSlots: true,
       proposedSlot: true,
+      confirmedSlot: true,
       auditLogs: {
         orderBy: { createdAt: "desc" }
       },
@@ -115,7 +116,7 @@ export default async function AdminApplicationPage({
     return "Autre";
   };
 
-  const isAnySlotBooked = application.visitSlots.some(s => s.status === "BOOKED");
+  const confirmedSlotId = application.confirmedSlotId;
 
   // Logic to compute dynamic requirements, completeness, and coherence metrics
   // Sync document requirements on page load to ensure they match the current property settings and candidate situation
@@ -794,7 +795,7 @@ export default async function AdminApplicationPage({
                     key={slot.id} 
                     applicationId={application.id} 
                     slot={slot} 
-                    isBooked={isAnySlotBooked} 
+                    confirmedSlotId={confirmedSlotId} 
                   />
                 ))
               )}
@@ -819,8 +820,8 @@ export default async function AdminApplicationPage({
                   applicationId={application.id}
                   availableSlots={availableSlots}
                   currentSlotDateStr={
-                    application.visitSlots.find((s) => s.status === "BOOKED")
-                      ? format(getParisDate(application.visitSlots.find((s) => s.status === "BOOKED")!.date), "EEEE d MMMM 'à' HH:mm", { locale: fr })
+                    application.confirmedSlot
+                      ? format(getParisDate(application.confirmedSlot.date), "EEEE d MMMM 'à' HH:mm", { locale: fr })
                       : undefined
                   }
                 />

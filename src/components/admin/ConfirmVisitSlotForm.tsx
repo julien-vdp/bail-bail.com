@@ -12,11 +12,11 @@ import { getParisDate } from "@/lib/dateUtils";
 export function ConfirmVisitSlotForm({ 
   applicationId, 
   slot,
-  isBooked
+  confirmedSlotId
 }: { 
   applicationId: string;
   slot: { id: string; date: Date; status: string };
-  isBooked: boolean;
+  confirmedSlotId: string | null;
 }) {
   const [state, formAction, isPending] = useActionState(confirmVisitSlotAction, null);
   const router = useRouter();
@@ -28,8 +28,10 @@ export function ConfirmVisitSlotForm({
   }, [state, router]);
 
   const slotDateStr = format(getParisDate(slot.date), "EEEE d MMMM à HH:mm", { locale: fr });
+  const isThisSlotConfirmed = confirmedSlotId === slot.id;
+  const isAnySlotBooked = !!confirmedSlotId;
 
-  if (isBooked && slot.status === "BOOKED") {
+  if (isThisSlotConfirmed) {
     return (
       <div className="flex items-center justify-between p-3 bg-success/10 border border-success/20 rounded-lg">
         <span className="text-sm font-medium text-success capitalize">{slotDateStr}</span>
@@ -42,7 +44,7 @@ export function ConfirmVisitSlotForm({
   }
 
   // Si une autre visite est déjà validée, on affiche les autres créneaux de manière grisée
-  if (isBooked && slot.status !== "BOOKED") {
+  if (isAnySlotBooked && !isThisSlotConfirmed) {
     return (
       <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-lg opacity-50">
         <span className="text-sm font-medium text-slate-500 capitalize line-through">{slotDateStr}</span>

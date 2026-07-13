@@ -139,6 +139,10 @@ export async function updateApplicationStatus(prevState: any, formData: FormData
             });
           }
         }
+        await prisma.application.update({
+          where: { id: applicationId },
+          data: { confirmedSlotId: null }
+        });
         
         // 4. Notification Email
         try {
@@ -262,13 +266,14 @@ export async function confirmVisitSlotAction(prevState: any, formData: FormData)
     }
   }
 
-  // 2. Connecter le créneau sélectionné à la candidature
+  // 2. Connecter le créneau sélectionné à la candidature et l'enregistrer comme validé
   await prisma.application.update({
     where: { id: applicationId },
     data: {
       visitSlots: {
         connect: { id: slotId }
-      }
+      },
+      confirmedSlotId: slotId
     }
   });
 
@@ -499,13 +504,14 @@ export async function modifyVisitSlotAction(
         });
       }
 
-      // 3. Connecter le nouveau créneau
+      // 3. Connecter le nouveau créneau et l'enregistrer comme validé
       await prisma.application.update({
         where: { id: applicationId },
         data: {
           visitSlots: {
             connect: { id: slotId }
-          }
+          },
+          confirmedSlotId: slotId
         }
       });
 
