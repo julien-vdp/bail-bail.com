@@ -90,17 +90,32 @@ export async function deleteVisitSlotAction(slotId: string) {
   try {
     const slot = await prisma.visitSlot.findUnique({
       where: { id: slotId },
-      include: { property: true, applications: true }
+      include: { 
+        property: true, 
+        applications: {
+          include: {
+            visitSlots: true
+          }
+        } 
+      }
     });
 
     if (!slot || slot.property.ownerId !== session.id) {
       return { error: "Créneau introuvable ou non autorisé" };
     }
 
-    // Optionally check if applications are attached.
-    // If it's already booked by someone, maybe prevent deletion?
-    if (slot.applications.length > 0) {
-      return { error: "Impossible de supprimer un créneau avec des candidats inscrits." };
+    // Bloquer la suppression uniquement s'il y a des candidats validés/confirmés sur ce créneau
+    const confirmedApps = slot.applications.filter(app => {
+      const confirmedId = app.confirmedSlotId || (
+        (app.status === "ACCEPTE" || app.status === "EN_COURS") 
+          ? app.visitSlots[0]?.id 
+          : null
+      );
+      return confirmedId === slot.id;
+    });
+
+    if (confirmedApps.length > 0) {
+      return { error: "Impossible de supprimer un créneau avec des candidats confirmés." };
     }
 
     await prisma.visitSlot.delete({

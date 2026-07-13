@@ -212,37 +212,49 @@ export function VisitSlotManager({
                     </h4>
                     
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {groupedSlots[day].map(slot => (
-                        <div key={slot.id} className="relative group border rounded-lg p-3 hover:border-slate-300 bg-white transition-colors">
-                          <div className="flex justify-between items-start mb-1">
-                            <span className="font-bold text-lg text-slate-900">
-                              {format(getParisDate(slot.date), "HH:mm")}
-                            </span>
-                            <button
-                              onClick={() => handleDelete(slot.id)}
-                              disabled={isDeleting === slot.id || (slot.applications?.length || 0) > 0}
-                              className="text-slate-400 hover:text-red-500 disabled:opacity-50 transition-colors"
-                              title={(slot.applications?.length || 0) > 0 ? "Impossible de supprimer un créneau avec des inscrits" : "Supprimer ce créneau"}
-                            >
-                              {isDeleting === slot.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                            </button>
-                          </div>
-                          
-                          <div className="flex items-center gap-1 text-xs text-slate-500 mb-2">
-                            <Clock className="w-3 h-3" />
-                            <span>{slot.duration} min</span>
-                          </div>
+                      {groupedSlots[day].map(slot => {
+                        const confirmedApps = slot.applications?.filter((app: any) => {
+                          const confirmedId = app.confirmedSlotId || (
+                            (app.status === "ACCEPTE" || app.status === "EN_COURS") 
+                              ? app.visitSlots?.[0]?.id 
+                              : null
+                          );
+                          return confirmedId === slot.id;
+                        }) || [];
+                        const confirmedCount = confirmedApps.length;
 
-                          <div className={`text-xs py-1 px-2 rounded flex justify-between items-center ${
-                            (slot.applications?.length || 0) >= slot.maxCandidates 
-                              ? 'bg-red-50 text-red-700 font-medium' 
-                              : 'bg-slate-50 text-slate-600'
-                          }`}>
-                            <span className="flex items-center gap-1"><Users className="w-3 h-3" /> Inscrits</span>
-                            <span>{slot.applications?.length || 0} / {slot.maxCandidates}</span>
+                        return (
+                          <div key={slot.id} className="relative group border rounded-lg p-3 hover:border-slate-300 bg-white transition-colors">
+                            <div className="flex justify-between items-start mb-1">
+                              <span className="font-bold text-lg text-slate-900">
+                                {format(getParisDate(slot.date), "HH:mm")}
+                              </span>
+                              <button
+                                onClick={() => handleDelete(slot.id)}
+                                disabled={isDeleting === slot.id || confirmedCount > 0}
+                                className="text-slate-400 hover:text-red-500 disabled:opacity-50 transition-colors"
+                                title={confirmedCount > 0 ? "Impossible de supprimer un créneau avec des candidats confirmés" : "Supprimer ce créneau"}
+                              >
+                                {isDeleting === slot.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                              </button>
+                            </div>
+                            
+                            <div className="flex items-center gap-1 text-xs text-slate-500 mb-2">
+                              <Clock className="w-3 h-3" />
+                              <span>{slot.duration} min</span>
+                            </div>
+
+                            <div className={`text-xs py-1 px-2 rounded flex justify-between items-center ${
+                              confirmedCount >= slot.maxCandidates 
+                                ? 'bg-red-50 text-red-700 font-medium' 
+                                : 'bg-slate-50 text-slate-600'
+                            }`}>
+                              <span className="flex items-center gap-1"><Users className="w-3 h-3" /> Inscrits</span>
+                              <span>{confirmedCount} / {slot.maxCandidates}</span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}

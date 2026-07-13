@@ -19,7 +19,13 @@ export default async function EditPropertyPage({
     include: { 
       images: true,
       visitSlots: {
-        include: { applications: true },
+        include: {
+          applications: {
+            include: {
+              visitSlots: true
+            }
+          }
+        },
         orderBy: { date: 'asc' }
       }
     }
