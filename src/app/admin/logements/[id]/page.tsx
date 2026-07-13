@@ -33,6 +33,12 @@ export default async function AdminPropertyPage({
             include: {
               candidate: true
             }
+          },
+          applications: {
+            include: {
+              candidate: true,
+              visitSlots: true
+            }
           }
         },
         orderBy: { date: "asc" }
@@ -132,7 +138,18 @@ export default async function AdminPropertyPage({
             <CardContent>
               <div className="space-y-3">
                 {property.visitSlots.map(slot => {
-                  const confirmedCount = slot.confirmedApplications?.length || 0;
+                  // Calculer les candidats confirmés (explicitement OU implicitement)
+                  const confirmedApps = slot.applications.filter(app => {
+                    const isExplicitlyConfirmed = app.confirmedSlotId === slot.id;
+                    const isImplicitlyConfirmed = 
+                      !app.confirmedSlotId && 
+                      app.visitSlots.length === 1 && 
+                      (app.status === "ACCEPTE" || app.status === "EN_COURS" || slot.status === "BOOKED");
+                      
+                    return isExplicitlyConfirmed || isImplicitlyConfirmed;
+                  });
+
+                  const confirmedCount = confirmedApps.length;
                   const isSlotFull = slot.status === "BOOKED" || confirmedCount >= slot.maxCandidates;
                   const isPartiallyBooked = confirmedCount > 0 && confirmedCount < slot.maxCandidates;
                   
@@ -158,9 +175,9 @@ export default async function AdminPropertyPage({
                         )}
                       </div>
                       
-                      {slot.confirmedApplications && slot.confirmedApplications.length > 0 && (
+                      {confirmedCount > 0 && (
                         <div className="flex flex-col gap-1 border-t border-slate-200/50 pt-1.5 mt-0.5">
-                          {slot.confirmedApplications.map(app => (
+                          {confirmedApps.map(app => (
                             <div key={app.id} className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
                               <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
                               <span>{app.candidate.firstName} {app.candidate.lastName}</span>

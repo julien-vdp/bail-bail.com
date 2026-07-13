@@ -116,7 +116,10 @@ export default async function AdminApplicationPage({
     return "Autre";
   };
 
-  const confirmedSlotId = application.confirmedSlotId;
+  let confirmedSlotId = application.confirmedSlotId;
+  if (!confirmedSlotId && application.visitSlots.length === 1 && (application.status === "ACCEPTE" || application.status === "EN_COURS")) {
+    confirmedSlotId = application.visitSlots[0].id;
+  }
 
   // Logic to compute dynamic requirements, completeness, and coherence metrics
   // Sync document requirements on page load to ensure they match the current property settings and candidate situation
@@ -822,7 +825,9 @@ export default async function AdminApplicationPage({
                   currentSlotDateStr={
                     application.confirmedSlot
                       ? format(getParisDate(application.confirmedSlot.date), "EEEE d MMMM 'à' HH:mm", { locale: fr })
-                      : undefined
+                      : (confirmedSlotId && application.visitSlots.length === 1
+                          ? format(getParisDate(application.visitSlots[0].date), "EEEE d MMMM 'à' HH:mm", { locale: fr })
+                          : undefined)
                   }
                 />
               </div>
