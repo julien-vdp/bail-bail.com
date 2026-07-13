@@ -28,6 +28,13 @@ export default async function AdminPropertyPage({
         orderBy: { createdAt: "desc" }
       },
       visitSlots: {
+        include: {
+          confirmedApplications: {
+            include: {
+              candidate: true
+            }
+          }
+        },
         orderBy: { date: "asc" }
       }
     }
@@ -124,16 +131,46 @@ export default async function AdminPropertyPage({
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {property.visitSlots.map(slot => (
-                  <div key={slot.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 bg-slate-50 text-sm">
-                    <span className="font-medium text-slate-700 capitalize">
-                      {format(getParisDate(slot.date), "EEE d MMM - HH:mm", { locale: fr })}
-                    </span>
-                    <Badge variant={slot.status === "AVAILABLE" ? "outline" : "default"} className={slot.status === "AVAILABLE" ? "text-success border-success" : ""}>
-                      {slot.status === "AVAILABLE" ? "Libre" : "Réservé"}
-                    </Badge>
-                  </div>
-                ))}
+                {property.visitSlots.map(slot => {
+                  const confirmedCount = slot.confirmedApplications?.length || 0;
+                  const isSlotFull = slot.status === "BOOKED" || confirmedCount >= slot.maxCandidates;
+                  const isPartiallyBooked = confirmedCount > 0 && confirmedCount < slot.maxCandidates;
+                  
+                  return (
+                    <div key={slot.id} className="flex flex-col p-3 rounded-lg border border-slate-150 bg-slate-50 gap-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-semibold text-slate-700 capitalize">
+                          {format(getParisDate(slot.date), "EEE d MMM - HH:mm", { locale: fr })}
+                        </span>
+                        
+                        {isSlotFull ? (
+                          <Badge className="bg-slate-900 text-white border-slate-900">
+                            {slot.maxCandidates > 1 ? `Complet (${confirmedCount}/${slot.maxCandidates})` : "Réservé"}
+                          </Badge>
+                        ) : isPartiallyBooked ? (
+                          <Badge className="bg-[#1463FF] text-white border-[#1463FF] hover:bg-[#1463FF]/90">
+                            Réservé ({confirmedCount}/{slot.maxCandidates})
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-success border-success bg-white">
+                            {slot.maxCandidates > 1 ? `Libre (0/${slot.maxCandidates})` : "Libre"}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {slot.confirmedApplications && slot.confirmedApplications.length > 0 && (
+                        <div className="flex flex-col gap-1 border-t border-slate-200/50 pt-1.5 mt-0.5">
+                          {slot.confirmedApplications.map(app => (
+                            <div key={app.id} className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                              <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
+                              <span>{app.candidate.firstName} {app.candidate.lastName}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
