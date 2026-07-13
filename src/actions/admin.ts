@@ -234,7 +234,7 @@ export async function confirmVisitSlotAction(prevState: any, formData: FormData)
     return { error: "Données introuvables ou non autorisées" };
   }
 
-  // 1. Déconnecter les autres slots de la candidature pour clarifier
+  // 1. Récupérer les autres créneaux de la candidature pour pouvoir recalculer leur statut après déconnexion
   const otherSlots = await prisma.visitSlot.findMany({
     where: {
       applications: { some: { id: applicationId } },
@@ -242,42 +242,31 @@ export async function confirmVisitSlotAction(prevState: any, formData: FormData)
     }
   });
 
-  if (otherSlots.length > 0) {
-    await prisma.application.update({
-      where: { id: applicationId },
-      data: {
-        visitSlots: {
-          disconnect: otherSlots.map((s: { id: string }) => ({ id: s.id }))
-        }
-      }
-    });
-
-    // Mettre à jour le statut de chacun de ces autres créneaux libérés
-    for (const os of otherSlots) {
-      const count = await prisma.application.count({
-        where: { visitSlots: { some: { id: os.id } } }
-      });
-      await prisma.visitSlot.update({
-        where: { id: os.id },
-        data: {
-          status: count >= os.maxCandidates ? "BOOKED" : "AVAILABLE"
-        }
-      });
-    }
-  }
-
-  // 2. Connecter le créneau sélectionné à la candidature et l'enregistrer comme validé
+  // 2. Déconnecter tous les autres slots et associer uniquement le créneau sélectionné, puis l'enregistrer comme validé
   await prisma.application.update({
     where: { id: applicationId },
     data: {
       visitSlots: {
-        connect: { id: slotId }
+        set: [{ id: slotId }]
       },
       confirmedSlotId: slotId
     }
   });
 
-  // 3. Mettre à jour le statut du créneau choisi
+  // 3. Mettre à jour le statut de chacun de ces autres créneaux libérés
+  for (const os of otherSlots) {
+    const count = await prisma.application.count({
+      where: { visitSlots: { some: { id: os.id } } }
+    });
+    await prisma.visitSlot.update({
+      where: { id: os.id },
+      data: {
+        status: count >= os.maxCandidates ? "BOOKED" : "AVAILABLE"
+      }
+    });
+  }
+
+  // 4. Mettre à jour le statut du créneau choisi
   const connectedAppsCount = await prisma.application.count({
     where: { visitSlots: { some: { id: slotId } } }
   });
@@ -480,14 +469,15 @@ export async function modifyVisitSlotAction(
     let emailHtml = "";
 
     if (type === "IMPOSE") {
-      // 1. Déconnecter les créneaux existants de la candidature
+      // 1. Déconnecter tous les anciens créneaux de la candidature et l'associer uniquement au nouveau créneau validé
       const currentSlots = application.visitSlots;
       await prisma.application.update({
         where: { id: applicationId },
         data: {
           visitSlots: {
-            disconnect: currentSlots.map(s => ({ id: s.id }))
-          }
+            set: [{ id: slotId }]
+          },
+          confirmedSlotId: slotId
         }
       });
 
@@ -503,17 +493,6 @@ export async function modifyVisitSlotAction(
           }
         });
       }
-
-      // 3. Connecter le nouveau créneau et l'enregistrer comme validé
-      await prisma.application.update({
-        where: { id: applicationId },
-        data: {
-          visitSlots: {
-            connect: { id: slotId }
-          },
-          confirmedSlotId: slotId
-        }
-      });
 
       // 4. Mettre à jour le statut du nouveau créneau
       const newSlotCount = await prisma.application.count({

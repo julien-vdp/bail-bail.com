@@ -23,6 +23,7 @@ export default async function AdminPropertyPage({
           candidate: true,
           documents: true,
           visitSlots: true,
+          confirmedSlot: true,
         },
         orderBy: { createdAt: "desc" }
       },
@@ -96,7 +97,9 @@ export default async function AdminPropertyPage({
                           </span>
                           <span className="flex items-center gap-1">
                             <Calendar className="h-4 w-4" />
-                            {app.visitSlots.length > 0 ? format(getParisDate(app.visitSlots[0].date), "dd MMM HH:mm", { locale: fr }) : "Aucune visite"}
+                            {app.confirmedSlot 
+                              ? format(getParisDate(app.confirmedSlot.date), "dd MMM HH:mm", { locale: fr }) 
+                              : (app.visitSlots.length > 0 ? format(getParisDate(app.visitSlots[0].date), "dd MMM HH:mm", { locale: fr }) : "Aucune visite")}
                           </span>
                         </div>
                       </div>

@@ -756,14 +756,16 @@ export async function respondToVisitProposalAction(applicationId: string, accept
     const appUrlClean = appUrl.endsWith("/") ? appUrl.slice(0, -1) : appUrl;
 
     if (accept) {
-      // 1. Déconnecter les créneaux existants de la candidature
+      // 1. Déconnecter tous les anciens créneaux de la candidature et associer uniquement le nouveau créneau proposé validé
       const currentSlots = application.visitSlots;
+      const proposedId = application.proposedSlotId!;
       await prisma.application.update({
         where: { id: applicationId },
         data: {
           visitSlots: {
-            disconnect: currentSlots.map(s => ({ id: s.id }))
-          }
+            set: [{ id: proposedId }]
+          },
+          confirmedSlotId: proposedId
         }
       });
 
@@ -779,17 +781,6 @@ export async function respondToVisitProposalAction(applicationId: string, accept
           }
         });
       }
-
-      // 3. Connecter le nouveau créneau proposé et l'enregistrer comme validé
-      await prisma.application.update({
-        where: { id: applicationId },
-        data: {
-          visitSlots: {
-            connect: { id: application.proposedSlotId! }
-          },
-          confirmedSlotId: application.proposedSlotId!
-        }
-      });
 
       // 4. Mettre à jour le statut du nouveau créneau
       const newSlotCount = await prisma.application.count({
