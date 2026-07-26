@@ -19,7 +19,7 @@ Bail-Bail est un Proof of Concept (POC) moderne visant à simplifier et professi
 
 ## 🛠 Stack Technique
 
-- **Framework :** Next.js 15 (App Router, Server Actions)
+- **Framework :** Next.js 16 (App Router, Server Actions)
 - **Styling :** Tailwind CSS v4 & shadcn/ui
 - **Base de données :** PostgreSQL (hébergé via Coolify)
 - **ORM :** Prisma
@@ -38,8 +38,8 @@ Le projet est packagé via Docker (avec un `.dockerignore` optimisé pour évite
 2. Configurer la variable `DATABASE_URL` (PostgreSQL) dans le fichier `.env`.
 3. Appliquer les migrations de schéma et populer les données :
    ```bash
-   npx prisma migrate dev --name init
-   npx prisma db seed
+   npx.cmd prisma migrate dev
+   npx.cmd prisma db seed
    ```
 4. Démarrer le serveur de développement :
    ```bash
@@ -115,5 +115,4 @@ npx tsx scratch/validateRequirements.ts
   * Une carte vitale ou dossier médical
   * Un extrait de casier judiciaire
   * Un chèque de réservation
-
 

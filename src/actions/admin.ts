@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { verifySession } from "@/lib/auth";
 import { getParisDate } from "@/lib/dateUtils";
+import { getPrivateUploadsRoot } from "@/lib/storage";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -113,7 +114,7 @@ export async function updateApplicationStatus(prevState: any, formData: FormData
         if (oldApp.documents && oldApp.documents.length > 0) {
           for (const doc of oldApp.documents) {
             const safeFilename = `${doc.id}.enc`;
-            const filePath = path.join(process.cwd(), "private_uploads", "documents", applicationId, safeFilename);
+            const filePath = path.join(getPrivateUploadsRoot(), "documents", applicationId, safeFilename);
             try {
               await fs.unlink(filePath);
             } catch (e) {

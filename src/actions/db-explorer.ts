@@ -4,7 +4,6 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { verifySession } from "@/lib/auth";
 
-const PASSWORD = "julien-admin";
 const COOKIE_NAME = "db_explorer_auth";
 
 async function isAuthorizedAdmin() {
@@ -17,12 +16,20 @@ export async function loginToDbExplorer(password: string) {
     return { error: "Non autorisé" };
   }
 
-  if (password === PASSWORD) {
+  const configuredPassword = process.env.DB_EXPLORER_PASSWORD;
+  if (!configuredPassword) {
+    console.error("DB_EXPLORER_PASSWORD is not configured");
+    return { error: "Le DB Explorer n'est pas configuré." };
+  }
+
+  if (password === configuredPassword) {
     const cookieStore = await cookies();
-    cookieStore.set(COOKIE_NAME, "true", { 
-      httpOnly: true, 
+    cookieStore.set(COOKIE_NAME, "true", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
       path: "/",
-      maxAge: 60 * 60 * 24 // 24 hours
+      maxAge: 60 * 60 * 24,
     });
     return { success: true };
   }
