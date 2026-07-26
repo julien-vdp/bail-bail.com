@@ -10,9 +10,15 @@ export type SessionPayload = {
 };
 
 const SESSION_COOKIE_NAME = "bail_bail_session";
-// In production, this should be an environment variable. We use a default fallback for easy local dev.
-const SECRET_KEY = process.env.JWT_SECRET || "super_secret_key_for_bail_bail_2026";
-const encodedKey = new TextEncoder().encode(SECRET_KEY);
+
+function getEncodedKey() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET must be configured before sessions can be used.");
+  }
+
+  return new TextEncoder().encode(secret);
+}
 
 export async function createSession(payload: SessionPayload) {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
@@ -20,7 +26,7 @@ export async function createSession(payload: SessionPayload) {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(encodedKey);
+    .sign(getEncodedKey());
 
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE_NAME, session, {
@@ -39,7 +45,7 @@ export async function verifySession(): Promise<SessionPayload | null> {
   if (!sessionCookie) return null;
 
   try {
-    const { payload } = await jwtVerify(sessionCookie, encodedKey, {
+    const { payload } = await jwtVerify(sessionCookie, getEncodedKey(), {
       algorithms: ["HS256"],
     });
     return payload as SessionPayload;
